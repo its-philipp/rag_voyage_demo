@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+*.log
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Byte-compiled / cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Project artifacts
+index/
+!index/.gitkeep
+.rag_env/
+*.faiss
+*.npy
+*.jsonl
+
+# Data and evals
+/data/
+/eval/reports/
+/evals/
+
+# Docker
+*.tar
+

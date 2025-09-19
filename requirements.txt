@@ -1,0 +1,17 @@
+# Core
+faiss-cpu>=1.8.0
+numpy>=1.26
+pandas>=2.0
+pyyaml>=6.0
+tqdm>=4.66
+
+# Voyage (HTTP client only; you bring the key)
+httpx>=0.27
+
+# ColBERT (late interaction reranker)
+colbert-ai>=0.2.19
+
+# Optional fallback cross-encoder reranker (if ColBERT GPU not available)
+sentence-transformers>=3.0.1
+torch>=2.2
+transformers>=4.41
