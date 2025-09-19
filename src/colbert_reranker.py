@@ -19,13 +19,9 @@ class ColBERTReranker:
         device: str = None,
     ):
         self.device = device or (
-            "cuda"
-            if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available() else "cpu"
+            "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         )
-        self.cfg = ColBERTConfig(
-            doc_maxlen=max_doc_len, query_maxlen=max_query_len, nbits=2
-        )
+        self.cfg = ColBERTConfig(doc_maxlen=max_doc_len, query_maxlen=max_query_len, nbits=2)
         self.model_name = model_name
         self._load()
 

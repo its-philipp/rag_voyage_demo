@@ -1,0 +1,50 @@
+[project]
+name = "rag-colbert-voyage-demo"
+version = "0.1.0"
+description = "RAG with Voyage embeddings, FAISS, and ColBERT reranking"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+
+# Runtime dependencies (migrated from requirements.txt)
+dependencies = [
+  "faiss-cpu>=1.8.0",
+  "numpy>=1.26",
+  "pandas>=2.0",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "httpx>=0.27",
+  "colbert-ai>=0.2.19",
+  "sentence-transformers>=3.0.1",
+  "torch>=2.2",
+  "transformers>=4.41",
+]
+
+[project.optional-dependencies]
+# Dev tools installed via `uv sync -G dev` or `uv sync --all-extras`
+dev = [
+  "black",
+  "ruff",
+  "mypy",
+  "pytest",
+  "pre-commit",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.black]
+line-length = 120
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+strict_optional = false
+warn_unused_ignores = true
+explicit_package_bases = true
+files = [
+  "src",
+  "build_index.py",
+  "query.py",
+  "scripts",
+]

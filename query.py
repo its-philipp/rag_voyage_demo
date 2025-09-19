@@ -52,9 +52,7 @@ def query_system(user_query: str, cfg: Dict):
     t1 = time.perf_counter()
     scores, ids = ann_search(index, qvec, cfg["retrieval"]["top_m"])
     t_retr_ms = (time.perf_counter() - t1) * 1000
-    logger.info(
-        "ANN search done in %.1f ms (top_m=%s)", t_retr_ms, cfg["retrieval"]["top_m"]
-    )
+    logger.info("ANN search done in %.1f ms (top_m=%s)", t_retr_ms, cfg["retrieval"]["top_m"])
 
     candidates = [meta[i] for i in ids]
     passages = [f"{c['title']}\n{c['text']}".strip() for c in candidates]

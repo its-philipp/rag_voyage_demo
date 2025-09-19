@@ -57,9 +57,7 @@ def build_faiss(index_dir, vecs, index_cfg):
         index = faiss.IndexIVFPQ(quantizer, d, nlist, m, 8, faiss.METRIC_INNER_PRODUCT)
         index.nprobe = int(index_cfg.get("nprobe", 16))
         # train
-        train_samples = vecs[
-            np.random.choice(len(vecs), min(20000, len(vecs)), replace=False)
-        ]
+        train_samples = vecs[np.random.choice(len(vecs), min(20000, len(vecs)), replace=False)]
         faiss.normalize_L2(train_samples)
         index.train(train_samples)
         # add
@@ -80,9 +78,7 @@ def build_faiss(index_dir, vecs, index_cfg):
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
     # Load config relative to this script so running the script from a
     # different working directory still finds the config file.
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -127,9 +123,7 @@ def main():
         vecs_parts.append(part)
     vecs = np.vstack(vecs_parts)
     embed_ms = (time.perf_counter() - t0) * 1000
-    logging.getLogger(__name__).info(
-        "Embedded %s chunks in %.1f ms", len(texts), embed_ms
-    )
+    logging.getLogger(__name__).info("Embedded %s chunks in %.1f ms", len(texts), embed_ms)
     # (optional) store metadata
     # Resolve index_dir relative to script dir
     index_dir = cfg.get("index_dir", "index")
