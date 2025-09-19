@@ -4,6 +4,7 @@ Produces documents with multiple sentences per doc. Script is deterministic by d
 Usage:
   python scripts/synthesize_docs.py --num 1000 --min-sents 3 --max-sents 6
 """
+
 import argparse
 import json
 import random
@@ -24,13 +25,28 @@ SENTENCE_TEMPLATES = [
 ]
 
 TOPICS = [
-    "colbert", "faiss", "dense retrievers", "contextual chunking", "RAG", "embeddings", "indexing", "approximate nearest neighbors",
-    "semantic search", "vector databases"
+    "colbert",
+    "faiss",
+    "dense retrievers",
+    "contextual chunking",
+    "RAG",
+    "embeddings",
+    "indexing",
+    "approximate nearest neighbors",
+    "semantic search",
+    "vector databases",
 ]
 
 IDEAS = [
-    "late interaction", "embedding normalization", "IVF-PQ", "HNSW", "vector quantization",
-    "sentence windowing", "reranking", "sharding", "ann search"
+    "late interaction",
+    "embedding normalization",
+    "IVF-PQ",
+    "HNSW",
+    "vector quantization",
+    "sentence windowing",
+    "reranking",
+    "sharding",
+    "ann search",
 ]
 
 
@@ -46,19 +62,23 @@ def make_doc(i, min_sents, max_sents):
     text = " ".join(sents)
     # shorten extremely long texts for safety
     text = shorten(text, width=800, placeholder="...")
-    return {
-        "doc_id": f"doc_{i:06d}",
-        "title": topic.title(),
-        "text": text
-    }
+    return {"doc_id": f"doc_{i:06d}", "title": topic.title(), "text": text}
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num", type=int, default=1000, help="number of documents to generate")
-    parser.add_argument("--min-sents", type=int, default=3, help="minimum sentences per doc")
-    parser.add_argument("--max-sents", type=int, default=6, help="maximum sentences per doc")
-    parser.add_argument("--seed", type=int, default=0, help="random seed for reproducibility")
+    parser.add_argument(
+        "--num", type=int, default=1000, help="number of documents to generate"
+    )
+    parser.add_argument(
+        "--min-sents", type=int, default=3, help="minimum sentences per doc"
+    )
+    parser.add_argument(
+        "--max-sents", type=int, default=6, help="maximum sentences per doc"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="random seed for reproducibility"
+    )
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -67,7 +87,9 @@ def main():
             doc = make_doc(i, args.min_sents, args.max_sents)
             f.write(json.dumps(doc, ensure_ascii=False) + "\n")
 
-    print(f"Wrote {OUT} with {args.num} docs (each {args.min_sents}-{args.max_sents} sentences)")
+    print(
+        f"Wrote {OUT} with {args.num} docs (each {args.min_sents}-{args.max_sents} sentences)"
+    )
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@ import json
 import yaml
 import numpy as np
 import faiss
+import logging
+import time
 from tqdm import tqdm
 from src.voyage_client import VoyageClient
 from src.chunking import make_chunks_with_context
@@ -20,6 +22,7 @@ def load_docs(path):
 
 
 def build_faiss(index_dir, vecs, index_cfg):
+    logger = logging.getLogger(__name__)
     os.makedirs(index_dir, exist_ok=True)
     d = vecs.shape[1]
     index_type = index_cfg.get("type", "ivf_pq")
@@ -54,7 +57,9 @@ def build_faiss(index_dir, vecs, index_cfg):
         index = faiss.IndexIVFPQ(quantizer, d, nlist, m, 8, faiss.METRIC_INNER_PRODUCT)
         index.nprobe = int(index_cfg.get("nprobe", 16))
         # train
-        train_samples = vecs[np.random.choice(len(vecs), min(20000, len(vecs)), replace=False)]
+        train_samples = vecs[
+            np.random.choice(len(vecs), min(20000, len(vecs)), replace=False)
+        ]
         faiss.normalize_L2(train_samples)
         index.train(train_samples)
         # add
@@ -62,11 +67,22 @@ def build_faiss(index_dir, vecs, index_cfg):
         index.add(vecs)
     else:
         raise ValueError("Unknown faiss.type")
-    faiss.write_index(index, os.path.join(index_dir, "voyage.faiss"))
+    index_path = os.path.join(index_dir, "voyage.faiss")
+    faiss.write_index(index, index_path)
+    logger.info(
+        "FAISS index written to %s (type=%s, dim=%s, size=%s)",
+        index_path,
+        index_type,
+        d,
+        len(vecs),
+    )
     return index
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+    )
     # Load config relative to this script so running the script from a
     # different working directory still finds the config file.
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -105,10 +121,15 @@ def main():
     per_request = min(conf_bs, 1000)
     batches = [texts[i : i + per_request] for i in range(0, len(texts), per_request)]
     vecs_parts = []
+    t0 = time.perf_counter()
     for b in tqdm(batches, desc="Embedding batches"):
         part = vc.embed(b).astype("float32")
         vecs_parts.append(part)
     vecs = np.vstack(vecs_parts)
+    embed_ms = (time.perf_counter() - t0) * 1000
+    logging.getLogger(__name__).info(
+        "Embedded %s chunks in %.1f ms", len(texts), embed_ms
+    )
     # (optional) store metadata
     # Resolve index_dir relative to script dir
     index_dir = cfg.get("index_dir", "index")

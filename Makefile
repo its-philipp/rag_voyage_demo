@@ -27,4 +27,3 @@ type:
 
 test:
 	uv run pytest -q
-

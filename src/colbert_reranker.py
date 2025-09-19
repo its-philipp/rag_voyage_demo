@@ -1,19 +1,31 @@
 import torch
-from typing import List, Tuple
-from colbert import Indexer, Searcher  # using colbert-ai
-from colbert.infra import Run, RunConfig
+from typing import List
+from colbert.infra import Run
 from colbert.modeling.colbert import ColBERT
 from colbert.infra.config.config import ColBERTConfig
 from colbert.modeling.tokenization.query_tokenization import QueryTokenizer
 from colbert.modeling.tokenization.doc_tokenization import DocTokenizer
 
+
 # Note: For lightweight reranking, we DON'T need to prebuild a ColBERT index if
 # we only rerank a small set of candidates. We'll encode on the fly.
 # This class wraps scoring of (query, passages) via late interaction.
 class ColBERTReranker:
-    def __init__(self, model_name: str = "colbert-ir/colbertv2.0", max_query_len: int = 64, max_doc_len: int = 180, device: str = None):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
-        self.cfg = ColBERTConfig(doc_maxlen=max_doc_len, query_maxlen=max_query_len, nbits=2)
+    def __init__(
+        self,
+        model_name: str = "colbert-ir/colbertv2.0",
+        max_query_len: int = 64,
+        max_doc_len: int = 180,
+        device: str = None,
+    ):
+        self.device = device or (
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps" if torch.backends.mps.is_available() else "cpu"
+        )
+        self.cfg = ColBERTConfig(
+            doc_maxlen=max_doc_len, query_maxlen=max_query_len, nbits=2
+        )
         self.model_name = model_name
         self._load()
 
@@ -40,7 +52,7 @@ class ColBERTReranker:
 
         # Encode
         Q = self.colbert.query(q_ids, q_mask)
-        D = self.colbert.doc(d_ids, d_mask, keep_dims='return_mask')
+        D = self.colbert.doc(d_ids, d_mask, keep_dims="return_mask")
         if isinstance(D, tuple):
             D, D_mask = D
         else:

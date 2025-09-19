@@ -1,9 +1,10 @@
-import os
 import httpx
 import numpy as np
 
+
 class VoyageClient:
     """Thin client for Voyage embeddings. Replace with your own client if needed."""
+
     def __init__(self, api_key: str, model: str = "voyage-context-3", timeout=30.0):
         self.api_key = api_key
         self.model = model
@@ -15,7 +16,7 @@ class VoyageClient:
             raise RuntimeError("VOYAGE_API_KEY missing. Set it in env or config.")
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         payload = {"model": self.model, "input": texts}
         with httpx.Client(timeout=self.timeout) as client:
