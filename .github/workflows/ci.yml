@@ -16,20 +16,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install uv
-        run: pip install uv
       - name: Install project (dev)
-        run: uv pip install -e '.[dev]'
+        run: pip install -e '.[dev]'
       - name: Lint
         run: |
-          uv run ruff check .
-          uv run ruff format --check .
+          ruff check .
+          ruff format --check .
       - name: Type check
-        run: uv run mypy .
+        run: mypy .
       - name: Tests
         env:
           VOYAGE_API_KEY: 'placeholder'
-        run: uv run pytest -q
+        run: pytest -q
 
   docker:
     runs-on: ubuntu-latest
