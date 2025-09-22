@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 import yaml
 from dotenv import load_dotenv
 
-from query import query_system
+from src.pipeline import query_system
 
 
 def create_app() -> Flask:

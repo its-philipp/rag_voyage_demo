@@ -1,3 +1,4 @@
+# moved from root query.py
 import os
 import json
 import yaml
@@ -6,12 +7,12 @@ import faiss
 import logging
 import time
 from typing import Dict, Any, Tuple, List
+from dotenv import load_dotenv
+
 from src.voyage_client import VoyageClient
 from src.cross_encoder_reranker import CrossEncoderReranker
 from src.colbert_reranker import ColBERTReranker
 from src.sparse_retriever import SparseRetriever
-import argparse
-from dotenv import load_dotenv
 
 
 def load_index(cfg: Dict[str, Any]) -> Tuple[faiss.Index, List[Dict]]:
@@ -30,22 +31,15 @@ def reciprocal_rank_fusion(
 ) -> Dict[str, float]:
     fused_scores: Dict[str, float] = {}
     for results in results_list:
-        for i, (doc_id, _) in enumerate(results):
+        for i, (doc_id, _score) in enumerate(results):
             rank = i + 1
-            if doc_id not in fused_scores:
-                fused_scores[doc_id] = 0.0
-            fused_scores[doc_id] += 1.0 / (k + rank)
-
+            fused_scores[doc_id] = fused_scores.get(doc_id, 0.0) + 1.0 / (k + rank)
     return dict(sorted(fused_scores.items(), key=lambda item: item[1], reverse=True))
 
 
 def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
-    """
-    Main query pipeline: Hybrid Search (dense + sparse) -> Reranking
-    """
     retrieval_top_m = int(cfg.get("retrieval", {}).get("top_m", 50))
 
-    # 1. Dense Retrieval (FAISS)
     start_time = time.time()
     query_embedding = voyage_client.embed([query])[0]
     D, indices = index.search(np.array([query_embedding]), k=retrieval_top_m)
@@ -56,11 +50,9 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
         if i != -1:
             dense_results.append((meta[i]["doc_id"], 1.0))
 
-    # 2. Sparse Retrieval (BM25)
     sparse_retriever = SparseRetriever(index_dir=cfg["bm25_index_path"])
     sparse_results = sparse_retriever.search(query, top_k=retrieval_top_m)
 
-    # 3. Reciprocal Rank Fusion
     fused_results = reciprocal_rank_fusion([dense_results, sparse_results])
     fused_doc_ids = list(fused_results.keys())
 
@@ -78,12 +70,10 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
         if doc_id in all_docs:
             docs_to_rerank.append((all_docs[doc_id]["doc_id"], all_docs[doc_id]["text"]))
 
-    # 4. Reranking (select between ColBERT and CrossEncoder)
     reranker_cfg = cfg.get("reranker", {}) or {}
     reranker_enabled = bool(reranker_cfg.get("enabled", False))
-    # Priority: env RERANKER overrides config; accepted values: 'colbert', 'crossencoder', 'none'
     env_choice = os.getenv("RERANKER", "").strip().lower()
-    cfg_choice = reranker_cfg.get("type")  # optional; 'colbert'|'crossencoder'|'none'
+    cfg_choice = reranker_cfg.get("type")
     choice = env_choice or (cfg_choice or ("crossencoder" if reranker_enabled else "none"))
 
     if choice == "colbert" and reranker_enabled:
@@ -116,14 +106,13 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
         else:
             final_chunks = []
     else:
-        # No reranking: return fused results with a dummy score
         fallback_top_k = int(cfg.get("retrieval", {}).get("top_k", 20))
         final_chunks = [(1.0, all_docs[doc_id]) for doc_id in fused_doc_ids[:fallback_top_k]]
 
     return final_chunks
 
 
-# --- Global Inits ---
+# Globals
 cfg = yaml.safe_load(open("config.yaml"))
 load_dotenv()
 
@@ -132,17 +121,5 @@ logging.basicConfig(level=logging.INFO)
 
 index, meta = load_index(cfg)
 voyage_client = VoyageClient(
-    os.getenv("VOYAGE_API_KEY"),
-    model=cfg.get("embedding", {}).get("model", "voyage-context-3"),
+    os.getenv("VOYAGE_API_KEY"), model=cfg.get("embedding", {}).get("model", "voyage-context-3")
 )
-
-# Note: reranker models are initialized lazily inside query_system based on config/env.
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("query", help="The query to search for.")
-    args = parser.parse_args()
-
-    results = query_system(args.query, cfg)
-    for s, c in results:
-        print(f"{s:.3f}\t{c['doc_id']}\t{c['text'][:120]}...")

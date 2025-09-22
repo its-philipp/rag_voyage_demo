@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import faiss
-from build_index import build_faiss
+from src.index_build import build_faiss
 
 
 def test_build_faiss_flat_smoke(tmp_path):

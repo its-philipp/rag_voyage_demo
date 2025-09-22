@@ -1,3 +1,4 @@
+# moved from root build_index.py
 import os
 import json
 import yaml
@@ -6,9 +7,10 @@ import faiss
 import logging
 import time
 from tqdm import tqdm
+from dotenv import load_dotenv
+
 from src.voyage_client import VoyageClient
 from src.chunking import make_chunks_with_context
-from dotenv import load_dotenv
 
 
 def load_docs(path):
@@ -41,15 +43,11 @@ def build_faiss(index_dir, vecs, index_cfg):
         m = int(index_cfg.get("m", 32))
         nbits = int(index_cfg.get("nbits", 8))
         quantizer = faiss.IndexFlatIP(d)
-        # Training requirements:
-        # - IVF coarse quantizer: need significantly more samples than nlist (empirical 4x)
-        # - PQ codebooks: need at least 2**nbits samples to train k-means per subvector
         min_train_needed = max(int(nlist * 4), 2**nbits)
         if len(vecs) < min_train_needed:
             print(
                 f"Warning: only {len(vecs)} vectors available but IVFPQ (nlist={nlist}, m={m}, nbits={nbits}) "
-                f"requires at least {min_train_needed} training points;"
-                " falling back to flat index to avoid FAISS training error."
+                f"requires at least {min_train_needed} training points; falling back to flat index"
             )
             index = faiss.IndexFlatIP(d)
             faiss.normalize_L2(vecs)
@@ -58,11 +56,9 @@ def build_faiss(index_dir, vecs, index_cfg):
             return index
         index = faiss.IndexIVFPQ(quantizer, d, nlist, m, nbits, faiss.METRIC_INNER_PRODUCT)
         index.nprobe = int(index_cfg.get("nprobe", 16))
-        # train
         train_samples = vecs[np.random.choice(len(vecs), min(20000, len(vecs)), replace=False)]
         faiss.normalize_L2(train_samples)
         index.train(train_samples)
-        # add
         faiss.normalize_L2(vecs)
         index.add(vecs)
     else:
@@ -70,11 +66,7 @@ def build_faiss(index_dir, vecs, index_cfg):
     index_path = os.path.join(index_dir, "voyage.faiss")
     faiss.write_index(index, index_path)
     logger.info(
-        "FAISS index written to %s (type=%s, dim=%s, size=%s)",
-        index_path,
-        index_type,
-        d,
-        len(vecs),
+        "FAISS index written to %s (type=%s, dim=%s, size=%s)", index_path, index_type, d, len(vecs)
     )
     return index
 
@@ -83,43 +75,35 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s"
     )
-    # Load environment variables from .env for API keys
     load_dotenv()
-    # Load config relative to this script so running the script from a
-    # different working directory still finds the config file.
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(script_dir, "config.yaml")
+    project_root = os.path.dirname(script_dir)
+    config_path = os.path.join(project_root, "config.yaml")
     if not os.path.exists(config_path):
-        raise FileNotFoundError(
-            f"config.yaml not found at {config_path}. Run this script from the project folder or create a config.yaml there."
-        )
+        raise FileNotFoundError(f"config.yaml not found at {config_path}")
     with open(config_path, "r") as fh:
         cfg = yaml.safe_load(fh)
     api_key = os.getenv(cfg["embedding"]["api_key_env"], "")
     vc = VoyageClient(api_key, model=cfg["embedding"]["model"])
 
-    # Resolve data path relative to the script directory if necessary
     data_path = cfg.get("data_path")
     if not data_path:
         raise ValueError("config.yaml missing 'data_path' entry")
     if not os.path.isabs(data_path):
-        data_path = os.path.join(script_dir, data_path)
+        data_path = os.path.join(project_root, data_path)
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"data file not found: {data_path}")
     docs = load_docs(data_path)
-    # chunk
+
     all_chunks = []
     for d in docs:
         all_chunks.extend(make_chunks_with_context(d, max_sentences=3, overlap=1))
 
-    # embed (concatenate context + text)
     texts = [f"{c['title']}\n{c['text']}".strip() for c in all_chunks]
-    if len(texts) == 0:
+    if not texts:
         print("No chunks to embed; exiting.")
         return
-    # batch embedding requests to avoid exceeding provider limits
     conf_bs = int(cfg.get("embedding", {}).get("batch_size", 16))
-    # cap per-request size to provider hard limit (Voyage complained at 1000)
     per_request = min(conf_bs, 1000)
     batches = [texts[i : i + per_request] for i in range(0, len(texts), per_request)]
     vecs_parts = []
@@ -130,18 +114,16 @@ def main():
     vecs = np.vstack(vecs_parts)
     embed_ms = (time.perf_counter() - t0) * 1000
     logging.getLogger(__name__).info("Embedded %s chunks in %.1f ms", len(texts), embed_ms)
-    # (optional) store metadata
-    # Resolve index_dir relative to script dir
+
     index_dir = cfg.get("index_dir", "index")
     if not os.path.isabs(index_dir):
-        index_dir = os.path.join(script_dir, index_dir)
+        index_dir = os.path.join(project_root, index_dir)
     os.makedirs(index_dir, exist_ok=True)
     np.save(os.path.join(index_dir, "vectors.npy"), vecs)
     with open(os.path.join(index_dir, "meta.jsonl"), "w") as f:
         for c in all_chunks:
             f.write(json.dumps(c) + "\n")
 
-    # build faiss
     build_faiss(index_dir, vecs, cfg.get("faiss", {}))
     print("Index built:", index_dir, "num_chks=", len(all_chunks))
 

@@ -1,6 +1,6 @@
 import argparse
 import yaml
-from query import query_system
+from src.pipeline import query_system
 
 
 def main():
