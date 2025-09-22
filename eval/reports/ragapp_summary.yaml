@@ -9,17 +9,16 @@ results:
     \ MaxSim between each query token and document token at search time, enhancing\
     \ sensitivity to exact terms and phrasings. This results in improved recall and\
     \ mean reciprocal rank (MRR) compared to bi-encoders while maintaining manageable\
-    \ latency.\n\nCross-encoders, on the other hand, jointly encode the [query, document]\
+    \ latency.\n\nCross-encoders, on the other hand, jointly encode the query-document\
     \ pair with full attention, allowing for deep interactions but at a high computational\
     \ cost, making them impractical for exhaustive retrieval at scale. ColBERT's decoupled\
-    \ encoding and MaxSim late interaction provide a faster retrieval process while\
-    \ still enabling fine-grained matching.\n\nIn summary, ColBERT combines the efficiency\
-    \ of bi-encoders with the expressiveness of cross-encoders, making it a balanced\
-    \ retrieval model that leverages token-level interactions without the heavy computational\
-    \ burden of full attention mechanisms."
+    \ encoding and MaxSim late interaction provide a faster retrieval solution while\
+    \ still enabling fine-grained matching.\n\nIn summary, ColBERT combines the expressiveness\
+    \ of cross-encoders with the efficiency of bi-encoders, making it a balanced retrieval\
+    \ model that leverages late interaction for enhanced performance (ColBERT Overview)."
   metrics:
     groundedness: 1.0
-    context_relevance_avg: 0.82
+    context_relevance_avg: 0.8
     answer_relevance: 1.0
   contexts:
   - '# ColBERT vs Bi-Encoders
@@ -89,10 +88,11 @@ results:
     \ (PQ). IVF partitions the space into nlist clusters, and during queries, it probes\
     \ nprobe nearest clusters. PQ compresses residual vectors into subvector codebooks.\
     \ \n\nThe trade-offs compared to a Flat index include reduced latency and memory\
-    \ footprint due to approximation, but this may come at the cost of accuracy. Specifically,\
-    \ while Flat indexes perform exact searches, IVFPQ offers faster searches for\
-    \ large datasets but may sacrifice some precision in the results (e.g., \"PQ reduces\
-    \ footprint but may reduce accuracy\")."
+    \ usage due to the approximations made by IVFPQ, but this may come at the cost\
+    \ of accuracy. Specifically, while Flat indexes perform exact searches and serve\
+    \ as accuracy baselines, IVFPQ's approximations can lead to lower recall and precision\
+    \ depending on the configuration of nlist and nprobe (e.g., \"Increase nprobe\
+    \ for higher recall at the cost of latency\")."
   metrics:
     groundedness: 1.0
     context_relevance_avg: 0.5

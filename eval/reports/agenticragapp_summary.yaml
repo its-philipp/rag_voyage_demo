@@ -3,39 +3,40 @@ results:
     models, highlighting its unique mechanism.
   answer: "ColBERT (Contextualized Late Interaction over BERT) is a retrieval model\
     \ that uniquely balances the expressiveness of cross-encoders with the efficiency\
-    \ of bi-encoders through its late interaction mechanism. \n\n**Cross-encoder models**\
-    \ jointly encode a query-document pair with full attention, allowing for deep\
-    \ interactions but at a high computational cost, making them infeasible for large-scale\
-    \ retrieval (source: ColBERT vs Cross-Encoders). In contrast, **bi-encoder models**\
-    \ independently embed queries and documents into single dense vectors, which enables\
-    \ fast approximate nearest neighbor (ANN) search but sacrifices token-level nuance\
-    \ (source: ColBERT vs Bi-Encoders).\n\n**Key features of ColBERT** include encoding\
-    \ queries and documents into token-level embeddings and computing MaxSim between\
-    \ these embeddings at search time, which allows for fine-grained matching while\
-    \ maintaining faster retrieval speeds (source: ColBERT Overview).\n\nColBERT differs\
-    \ from traditional cross-encoders by decoupling the encoding process and employing\
-    \ MaxSim for late interaction, which enhances retrieval speed while retaining\
-    \ detailed matching capabilities (source: ColBERT vs Cross-Encoders). Compared\
-    \ to bi-encoders, ColBERT's use of multiple vectors per text and late interaction\
-    \ improves sensitivity to exact terms and phrasings, leading to better recall\
-    \ and mean reciprocal rank (MRR) on passage retrieval benchmarks (source: ColBERT\
-    \ vs Bi-Encoders).\n\nThe **unique mechanism of ColBERT** lies in its late interaction\
-    \ approach, which allows it to efficiently compute relevance scores based on token-level\
-    \ embeddings rather than relying solely on single-vector representations (source:\
-    \ ColBERT Overview).\n\n**Advantages of ColBERT** over traditional models include\
-    \ improved retrieval speed and enhanced sensitivity to specific terms, making\
-    \ it effective for scenarios requiring both efficiency and accuracy (source: ColBERT\
-    \ vs Bi-Encoders). However, its limitations include incurring per-query encoding\
-    \ and MaxSim computation costs, which can affect latency (source: ColBERT Latency\
-    \ Considerations).\n\nColBERT is particularly effective in scenarios where fine-grained\
-    \ matching is crucial, such as passage retrieval tasks, while still being efficient\
-    \ enough for practical use (source: ColBERT vs Bi-Encoders). In terms of efficiency\
-    \ and accuracy, ColBERT provides a middle ground between the computationally heavy\
-    \ cross-encoders and the less nuanced bi-encoders, making it a versatile choice\
-    \ for various retrieval tasks (source: ColBERT Overview)."
+    \ of bi-encoders through its \"late interaction\" mechanism. \n\n**Cross-Encoder\
+    \ vs. Bi-Encoder:**\n- **Cross-encoders** jointly encode the [query, document]\
+    \ pair with full attention, allowing for deep interactions but at a high computational\
+    \ cost, making them infeasible for exhaustive retrieval at scale. They excel in\
+    \ reranking tasks (source: ColBERT vs Cross-Encoders).\n- **Bi-encoders**, on\
+    \ the other hand, independently embed queries and documents into single dense\
+    \ vectors, which enables fast approximate nearest neighbor (ANN) search but sacrifices\
+    \ token-level nuance (source: ColBERT vs Bi-Encoders).\n\n**ColBERT's Mechanism:**\n\
+    ColBERT encodes queries and documents into token-level embeddings and computes\
+    \ MaxSim between each query token embedding and document token embeddings at search\
+    \ time, summing these maxima to produce a score. This allows for fine-grained\
+    \ matching while maintaining faster retrieval speeds compared to traditional cross-encoders\
+    \ (source: ColBERT Overview).\n\n**Advantages of ColBERT:**\n- Over **cross-encoders**,\
+    \ ColBERT offers faster retrieval due to its decoupled encoding and late interaction\
+    \ mechanism, which retains fine-grained matching without the high computational\
+    \ cost (source: ColBERT vs Cross-Encoders).\n- Compared to **bi-encoders**, ColBERT\
+    \ improves sensitivity to exact terms and phrasings by using multiple vectors\
+    \ per text and late interaction, typically increasing recall and mean reciprocal\
+    \ rank (MRR) on passage retrieval benchmarks while keeping latency manageable\
+    \ (source: ColBERT vs Bi-Encoders).\n\n**Performance Metrics:**\nColBERT, cross-encoders,\
+    \ and bi-encoders are evaluated using metrics such as recall@K and MRR, focusing\
+    \ on retrieval-only metrics separately from end-to-end metrics (source: Evaluation\
+    \ Methodology).\n\n**Scenarios for Effectiveness:**\nColBERT is particularly effective\
+    \ in scenarios requiring a balance between expressiveness and efficiency, such\
+    \ as passage retrieval tasks where fine-grained matching is crucial (source: ColBERT\
+    \ vs Bi-Encoders).\n\n**Limitations:**\nColBERT incurs per-query encoding and\
+    \ MaxSim computation, which can affect latency, and it may not match the deep\
+    \ interaction capabilities of cross-encoders in certain contexts (source: ColBERT\
+    \ Latency Considerations). \n\nIn summary, ColBERT's unique late interaction mechanism\
+    \ allows it to outperform traditional models in specific retrieval tasks by combining\
+    \ the strengths of both cross-encoders and bi-encoders."
   metrics:
     groundedness: 1.0
-    context_relevance_avg: 0.82
+    context_relevance_avg: 0.7799999999999999
     answer_relevance: 1.0
   contexts:
   - '# ColBERT Overview
@@ -142,47 +143,57 @@ results:
     and clustering of dense vectors. It contains algorithms that search in sets of
     vectors of any size, up to ones that possibly do not fit in RAM. The most basic
     FAISS index is the `IndexFlatL2`.
+  - '# BM25 vs Dense
+
+
+    BM25 excels at exact tokens and codes; dense handles paraphrase. Hybrid mitigates
+    both weaknesses.'
+  - "# Reciprocal Rank Fusion\n\nRRF merges multiple ranked lists by summing 1/(k\
+    \ + rank). It is parameter-light and robust to noise. Typical k ranges 10\u2013\
+    60."
+  - '# FAISS HNSW
+
+
+    HNSW builds a multi-layer navigable small-world graph. During search, the algorithm
+    traverses from an entry point, refining candidates through neighbors at each layer.
+    Parameters like efSearch and efConstruction control accuracy vs.'
+  - '# Evaluation Methodology
+
+
+    Use realistic queries and track metrics over time. For RAG triad, keep prompts
+    stable. Compare retrieval-only metrics (recall@K, MRR) separately from end-to-end
+    metrics.'
   - '# BM25 Tuning
 
 
     Tokenization, stopwords, and stemming strongly affect BM25. Consider domain-specific
     tokenization and custom stopword lists. For code/doc mixtures, splitting on punctuation
     and camelCase can help.'
-  - '# Common Retrieval Failures
-
-
-    Failure modes include:
-
-    - Vocabulary mismatch: dense helps; add synonyms, augment data. - Ambiguity: query
-    decomposition or disambiguation prompts. - Over-chunking: too small windows fragment
-    context.'
-  - '# FAISS Basics
-
-
-    FAISS provides vector indexes for similarity search. IndexFlatL2 and IndexFlatIP
-    perform exact search and serve as accuracy baselines. For large datasets, approximate
-    indexes like IVF, HNSW, and PQ reduce latency and memory.'
 - question: How does the FAISS IVFPQ index work, and what are the trade-offs compared
     to a Flat index?
-  answer: "The FAISS IVFPQ index combines an inverted file (IVF) structure with product\
-    \ quantization (PQ) to enhance efficiency in similarity search. It partitions\
-    \ the vector space into clusters (nlist) and uses PQ to compress residual vectors\
-    \ into subvector codebooks, allowing for faster querying by probing a limited\
-    \ number of clusters (nprobe) rather than the entire dataset.\n\nIn contrast,\
-    \ a Flat index, such as IndexFlatL2, performs exact searches without any approximations,\
-    \ serving as an accuracy baseline. It requires examining all vectors, which can\
-    \ be computationally expensive for large datasets.\n\n**Trade-offs:**\n- **Advantages\
-    \ of IVFPQ over Flat:**\n  - Reduced latency and memory footprint due to approximation\
-    \ and compression techniques.\n  - Scalability for large datasets, making it suitable\
-    \ for scenarios where speed is critical.\n\n- **Disadvantages of IVFPQ compared\
-    \ to Flat:**\n  - Potential loss of accuracy due to approximation.\n  - Requires\
-    \ careful tuning of parameters like nlist and nprobe to balance recall and latency.\n\
-    \n**Scenarios for IVFPQ use:**\nIVFPQ is preferable in large-scale applications\
-    \ where speed and memory efficiency are prioritized over exact accuracy, while\
-    \ Flat indexes are better suited for smaller datasets or when exact results are\
-    \ necessary.\n\n**Performance metrics to consider:**\nKey metrics include recall@K,\
-    \ queries per second (QPS), and memory footprint, which help evaluate the trade-offs\
-    \ between accuracy and efficiency (source: FAISS Metrics)."
+  answer: 'The FAISS IVFPQ index combines an inverted file (IVF) with product quantization
+    (PQ) to efficiently perform similarity searches. It works by partitioning the
+    vector space into clusters (nlist) and using a query to probe a limited number
+    of these clusters (nprobe). The residual vectors from these clusters are then
+    compressed into subvector codebooks through PQ, which reduces memory usage but
+    may impact accuracy (source: FAISS IVFPQ).
+
+
+    In contrast, a Flat index in FAISS performs exact searches without any approximations,
+    serving as an accuracy baseline. It indexes all vectors directly, which can be
+    computationally expensive and memory-intensive for large datasets (source: FAISS
+    Basics).
+
+
+    The trade-offs between IVFPQ and Flat indexes primarily involve speed and accuracy.
+    IVFPQ offers faster search times and lower memory requirements at the cost of
+    potential accuracy loss due to quantization. Flat indexes provide exact results
+    but can be slower and require more memory (source: FAISS Metrics, Index Size Considerations).
+
+
+    IVFPQ is preferable in scenarios with large datasets where speed and memory efficiency
+    are critical, while Flat indexes may be better suited for smaller datasets where
+    exact accuracy is paramount (source: FAISS Tuning).'
   metrics:
     groundedness: 1.0
     context_relevance_avg: 0.44000000000000006
@@ -266,6 +277,10 @@ results:
 
     Use periodic full rebuilds or append-only with periodic compaction; version artifacts
     for rollback.'
+  - 'Evaluating a Retrieval-Augmented Generation (RAG) application involves assessing
+    the quality of both the retrieval and generation components. A useful framework
+    for this is the RAG Triad, which focuses on three key metrics: Answer Relevance,
+    Context Relevance, and Groundedness. 1.'
   - '# Embedding Models (Voyage)
 
 
@@ -278,6 +293,24 @@ results:
     more relevant and accurate results than either method could achieve on its own.
     Sparse retrieval, powered by algorithms like BM25, excels at finding documents
     with exact keyword matches.
+  - '# BM25 Basics
+
+
+    BM25 scores documents based on term frequency, inverse document frequency, and
+    document length normalization. It excels at exact keyword matching, making it
+    complementary to dense retrieval. Tokenization quality and stopword handling significantly
+    influence performance.'
+  - '# RRF k Parameter
+
+
+    Typical k=60 balances aggressiveness; tune per corpus size. Larger k dampens rank
+    differences.'
+  - '# Negative Sampling
+
+
+    For training or tuning rerankers, hard negatives improve discrimination. Even
+    in evaluation, include queries that test edge cases to avoid overfitting to easy
+    wins.'
   - '# ColBERT vs Bi-Encoders
 
 
@@ -286,48 +319,29 @@ results:
     text and late interaction, improving sensitivity to exact terms and phrasings.
     This typically increases recall and MRR over bi-encoders on passage retrieval
     benchmarks while keeping latency manageable.'
-  - '# Benefits of Hybrid
+  - '# ColBERT vs Cross-Encoders
 
 
-    Hybrid retrieval improves robustness: sparse catches exact strings (IDs, codes),
-    dense captures paraphrases. RRF is a strong baseline; learned fusion can add modest
-    gains but requires labels. Hybrid also helps when one modality underperforms due
-    to domain shift.'
-  - '# Negative Sampling
-
-
-    For training or tuning rerankers, hard negatives improve discrimination. Even
-    in evaluation, include queries that test edge cases to avoid overfitting to easy
-    wins.'
-  - '# BM25 vs Dense
-
-
-    BM25 excels at exact tokens and codes; dense handles paraphrase. Hybrid mitigates
-    both weaknesses.'
+    Cross-encoders jointly encode the [query, document] pair with full attention,
+    enabling deep interactions but at high computational cost. They excel in reranking
+    but are infeasible for exhaustive retrieval at scale. ColBERT decouples encoding
+    and uses a MaxSim late interaction at query time, yielding faster retrieval while
+    retaining fine-grained matching.'
   - "# Agentic Query Decomposition\n\nBreaking complex questions into sub-queries\
     \ can improve coverage. However, avoid over-decomposition that dilutes signal.\
     \ Limit to 5\u201310 sub-queries, deduplicate contexts, and synthesize with explicit\
     \ instructions to ground the final answer."
-  - 'Evaluating a Retrieval-Augmented Generation (RAG) application involves assessing
-    the quality of both the retrieval and generation components. A useful framework
-    for this is the RAG Triad, which focuses on three key metrics: Answer Relevance,
-    Context Relevance, and Groundedness. 1.'
-  - '# Evaluation Methodology
+  - '# ColBERT Latency Considerations
 
 
-    Use realistic queries and track metrics over time. For RAG triad, keep prompts
-    stable. Compare retrieval-only metrics (recall@K, MRR) separately from end-to-end
-    metrics.'
-  - '# RAG Triad Evaluation
+    ColBERT incurs per-query encoding and MaxSim computation. To reduce latency: cache
+    frequent queries, cap reranker_k, and ensure efficient batching. On GPU, throughput
+    improves substantially.'
+  - '# ColBERT Overview
 
 
-    The RAG Triad evaluates: (1) Context Relevance (retrieval quality), (2) Groundedness
-    (answer supported by context), and (3) Answer Relevance (final answer addresses
-    the query). Improvements often come from better retrievers (context relevance),
-    citation/attribution prompting (groundedness), and instruction tuning (answer
-    relevance).'
-  - '# RRF k Parameter
-
-
-    Typical k=60 balances aggressiveness; tune per corpus size. Larger k dampens rank
-    differences.'
+    ColBERT (Contextualized Late Interaction over BERT) is a retrieval model that
+    balances the expressiveness of cross-encoders with the efficiency of bi-encoders
+    by introducing late interaction. Queries and documents are encoded into token-level
+    embeddings. At search time, ColBERT computes MaxSim between each query token embedding
+    and document token embeddings, then sums these maxima to produce a score.'

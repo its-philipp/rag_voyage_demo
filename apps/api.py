@@ -4,10 +4,8 @@ from flask import Flask, request, jsonify
 import yaml
 from dotenv import load_dotenv
 
-from src.pipeline import query_system
 
-
-def create_app() -> Flask:
+def create_app(query_func=None) -> Flask:
     load_dotenv()
     logging.basicConfig(level=logging.INFO)
     app = Flask(__name__)
@@ -24,7 +22,13 @@ def create_app() -> Flask:
         q = data.get("query")
         if not q:
             return jsonify({"error": "Missing 'query'"}), 400
-        results = query_system(q, cfg)
+        # Lazy injection to avoid heavy imports during testing
+        nonlocal query_func
+        if query_func is None:
+            from src.pipeline import query_system as _query_system  # type: ignore
+
+            query_func = _query_system
+        results = query_func(q, cfg)
         out = [
             {
                 "score": float(score),

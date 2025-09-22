@@ -28,8 +28,8 @@ dependencies = [
 [project.optional-dependencies]
 # Dev tools installed via `uv sync -G dev` or `uv sync --all-extras`
 dev = [
-    "black>=24.4.2",
-    "ruff>=0.4.4",
+    "black==24.8.0",
+    "ruff==0.6.8",
     "mypy>=1.10.0",
     "pytest>=8.2.1",
     "pre-commit>=3.7.1",
