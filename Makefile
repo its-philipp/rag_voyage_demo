@@ -22,10 +22,10 @@ setup:
 	.venv/bin/uv pip install -e '.[dev]'
 
 index:
-	.venv/bin/uv run python build_index.py
+	.venv/bin/uv run python apps/cli/build_index.py
 
 query:
-	.venv/bin/uv run python query.py
+	.venv/bin/uv run python -m apps.cli.query "What is ColBERT?"
 
 eval:
 	.venv/bin/uv run python -m eval.run_evaluation

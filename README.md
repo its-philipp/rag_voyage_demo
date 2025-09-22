@@ -45,9 +45,8 @@ make index
 ```
 4) Query or run API
 ```bash
-make query
-# or
-make api  # starts Flask on :8000
+make query         # runs a sample query via apps/cli/query
+make api           # starts Flask on :8000
 ```
 5) Evaluate
 ```bash
@@ -139,6 +138,7 @@ make type
 ├── data/                    # Sample docs & corpus/
 ├── index/, index_bm25/      # Built indexes
 ├── apps/api.py              # Flask API
+├── apps/cli/                # CLI wrappers for scripts
 ├── Dockerfile               # Container build
 ├── .github/workflows/ci.yml # CI: lint/type/test + GHCR
 ├── config.yaml              # Runtime config
