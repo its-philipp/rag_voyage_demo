@@ -24,10 +24,7 @@ index/
 *.npy
 *.jsonl
 
-# Data and evals
-/data/
-/eval/reports/
-/eval/
+# Other evaluation directories
 /evals/
 
 # Build artifacts

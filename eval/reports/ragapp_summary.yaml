@@ -1,0 +1,223 @@
+results:
+- question: Compare and contrast ColBERT with traditional cross-encoder and bi-encoder
+    models, highlighting its unique mechanism.
+  answer: 'ColBERT distinguishes itself from traditional cross-encoder and bi-encoder
+    models through its unique "late interaction" mechanism, which allows for a balance
+    between expressiveness and efficiency.
+
+
+    1. **Bi-encoders**: These models independently embed the query and document into
+    single-vector representations. While this approach is fast, it can lose nuance
+    because the entire meaning of the text must be compressed into one vector. They
+    compute a single similarity score (like dot-product or cosine similarity) between
+    the query and document vectors, which may not capture detailed token-level interactions.
+
+
+    2. **Cross-encoders**: In contrast, cross-encoders jointly process the query and
+    document, enabling deeper, token-level comparisons that yield higher accuracy.
+    However, this method is computationally expensive and slow, making it impractical
+    for searching through large datasets.
+
+
+    3. **ColBERT**: ColBERT offers a middle ground by producing multi-vector embeddings
+    for both the query and document. Each token in the query and document is converted
+    into an embedding, allowing for token-level matching. The "late interaction" occurs
+    at search time, where ColBERT finds the maximum similarity score for each query
+    embedding against all document embeddings, summing these scores to derive the
+    final query-document score. This approach is more granular than bi-encoders and
+    faster than cross-encoders, optimizing both speed and memory efficiency.
+
+
+    In summary, ColBERT''s unique mechanism of late interaction and multi-vector embeddings
+    enables it to achieve a balance between the speed of bi-encoders and the accuracy
+    of cross-encoders, making it suitable for large-scale retrieval tasks.'
+  metrics:
+    groundedness: 1.0
+    context_relevance_avg: 0.62
+    answer_relevance: 1.0
+  contexts:
+  - These maximum scores are then summed up to get the final query-document score.
+    This approach is more granular than bi-encoders because it allows for token-level
+    matching, but it's much faster than cross-encoders because the expensive joint
+    processing is replaced by a simple MaxSim operation. ColBERTv2 further optimizes
+    this by pre-computing document embeddings and using a compressed representation
+    for the index, making it both fast and memory-efficient.
+  - ColBERTv2 is a retrieval model that balances the expressiveness of computationally
+    expensive models with the efficiency of less expressive but faster models. It
+    introduces a "late interaction" mechanism over BERT-based embeddings. Standard
+    dense retrieval models, often called bi-encoders, independently embed the query
+    and the document into single-vector representations.
+  - Standard dense retrieval models, often called bi-encoders, independently embed
+    the query and the document into single-vector representations. During search,
+    they compute a single similarity score (like dot-product or cosine similarity)
+    between the query vector and all document vectors. This is fast but can lose nuance,
+    as the embedding must compress the entire meaning of the text into one vector.
+  - This is fast but can lose nuance, as the embedding must compress the entire meaning
+    of the text into one vector. On the other hand, cross-encoders (or re-rankers)
+    jointly process the query and a document. This allows for deeper, token-level
+    comparisons, resulting in much higher accuracy.
+  - ColBERT offers a middle ground. It produces multi-vector embeddings for both the
+    query and the document. For a query, each of its tokens is converted into an embedding.
+  - This allows for deeper, token-level comparisons, resulting in much higher accuracy.
+    However, this process is extremely slow and not feasible for searching over millions
+    of documents. ColBERT offers a middle ground.
+  - For a query, each of its tokens is converted into an embedding. For a document,
+    ColBERT also embeds each of its tokens. The "late interaction" happens at search
+    time.
+  - The "late interaction" happens at search time. For each query embedding, ColBERT
+    finds the maximum similarity score against all document embeddings. These maximum
+    scores are then summed up to get the final query-document score.
+  - '`IndexIVFPQ` is much faster and more memory-efficient because it uses an approximate
+    search strategy with partitioning and compression, but the results are not guaranteed
+    to be perfect. The trade-off between speed and accuracy is controlled by parameters
+    like `nprobe` and the PQ settings.'
+  - This allows FAISS to store massive datasets in RAM. In summary, `IndexFlatL2`
+    guarantees finding the exact nearest neighbors but is slow. `IndexIVFPQ` is much
+    faster and more memory-efficient because it uses an approximate search strategy
+    with partitioning and compression, but the results are not guaranteed to be perfect.
+  - This is a brute-force approach and serves as the gold standard for accuracy. However,
+    its search time scales linearly with the number of documents, making it slow for
+    large datasets. For larger datasets, FAISS offers methods that trade some accuracy
+    for speed.
+  - 'This is often implemented using a dense passage retriever (DPR) model, which
+    embeds both the input and the passages into a shared high-dimensional vector space
+    for similarity search. - The Generator: This is a sequence-to-sequence model (like
+    BART or T5) that takes the original user input and the retrieved passages as context,
+    and generates the final text output. The generator learns to synthesize an answer
+    by conditioning on the provided knowledge.'
+  - The most basic FAISS index is the `IndexFlatL2`. It performs an exhaustive search,
+    computing the L2 distance between the query vector and every other vector in the
+    index. This is a brute-force approach and serves as the gold standard for accuracy.
+  - For larger datasets, FAISS offers methods that trade some accuracy for speed.
+    A popular choice is the `IndexIVFPQ`. This index works by partitioning the vector
+    space into cells (voronoi cells).
+  - FAISS (Facebook AI Similarity Search) is a library for efficient similarity search
+    and clustering of dense vectors. It contains algorithms that search in sets of
+    vectors of any size, up to ones that possibly do not fit in RAM. The most basic
+    FAISS index is the `IndexFlatL2`.
+  - 'The RAG framework consists of two main components: a retriever and a generator.
+    - The Retriever: Given a user input (e.g., a question), the retriever''s job is
+    to find a small set of relevant text passages from the knowledge base. This is
+    often implemented using a dense passage retriever (DPR) model, which embeds both
+    the input and the passages into a shared high-dimensional vector space for similarity
+    search.'
+  - '- PQ (Product Quantization): This technique compresses the vectors to reduce
+    their memory footprint. It breaks down a large vector into smaller sub-vectors
+    and quantizes each sub-vector separately. This allows FAISS to store massive datasets
+    in RAM.'
+  - 'The `nprobe` parameter controls how many cells to visit. A higher `nprobe` means
+    better accuracy but slower search. - PQ (Product Quantization): This technique
+    compresses the vectors to reduce their memory footprint.'
+  - 'This index works by partitioning the vector space into cells (voronoi cells).
+    - IVF (Inverted File): At search time, the index only searches within a few cells
+    closest to the query vector, rather than the entire dataset. The `nprobe` parameter
+    controls how many cells to visit.'
+  - The generator learns to synthesize an answer by conditioning on the provided knowledge.
+    RAG models can be trained end-to-end, allowing both the retriever and the generator
+    to be fine-tuned together for the specific task. This joint training helps the
+    retriever learn to find passages that are most useful for the generator.
+- question: How does the FAISS IVFPQ index work, and what are the trade-offs compared
+    to a Flat index?
+  answer: "The FAISS IVFPQ index works by partitioning the vector space into cells\
+    \ (voronoi cells) and using an approximate search strategy. During a search, it\
+    \ only examines a few cells closest to the query vector instead of the entire\
+    \ dataset, which significantly speeds up the search process. The `nprobe` parameter\
+    \ controls how many cells are visited; a higher `nprobe` can improve accuracy\
+    \ but also slows down the search.\n\nThe trade-offs compared to a Flat index,\
+    \ specifically `IndexFlatL2`, are as follows: \n\n1. **Speed**: `IndexIVFPQ` is\
+    \ much faster because it reduces the number of vectors to consider by focusing\
+    \ on a limited number of cells, while `IndexFlatL2` performs an exhaustive search\
+    \ across all vectors, making it slow for large datasets.\n\n2. **Memory Efficiency**:\
+    \ `IndexIVFPQ` is more memory-efficient due to the use of Product Quantization\
+    \ (PQ), which compresses the vectors, allowing for the storage of massive datasets\
+    \ in RAM. In contrast, `IndexFlatL2` does not use compression and requires more\
+    \ memory.\n\n3. **Accuracy**: `IndexFlatL2` guarantees finding the exact nearest\
+    \ neighbors, serving as the gold standard for accuracy. In contrast, `IndexIVFPQ`\
+    \ provides approximate results, which may not be perfect, reflecting a trade-off\
+    \ between speed and accuracy.\n\nIn summary, `IndexIVFPQ` offers faster and more\
+    \ memory-efficient searches at the cost of some accuracy compared to the exact\
+    \ and slower `IndexFlatL2`."
+  metrics:
+    groundedness: 1.0
+    context_relevance_avg: 0.7
+    answer_relevance: 1.0
+  contexts:
+  - '`IndexIVFPQ` is much faster and more memory-efficient because it uses an approximate
+    search strategy with partitioning and compression, but the results are not guaranteed
+    to be perfect. The trade-off between speed and accuracy is controlled by parameters
+    like `nprobe` and the PQ settings.'
+  - For larger datasets, FAISS offers methods that trade some accuracy for speed.
+    A popular choice is the `IndexIVFPQ`. This index works by partitioning the vector
+    space into cells (voronoi cells).
+  - This allows FAISS to store massive datasets in RAM. In summary, `IndexFlatL2`
+    guarantees finding the exact nearest neighbors but is slow. `IndexIVFPQ` is much
+    faster and more memory-efficient because it uses an approximate search strategy
+    with partitioning and compression, but the results are not guaranteed to be perfect.
+  - 'This index works by partitioning the vector space into cells (voronoi cells).
+    - IVF (Inverted File): At search time, the index only searches within a few cells
+    closest to the query vector, rather than the entire dataset. The `nprobe` parameter
+    controls how many cells to visit.'
+  - '- PQ (Product Quantization): This technique compresses the vectors to reduce
+    their memory footprint. It breaks down a large vector into smaller sub-vectors
+    and quantizes each sub-vector separately. This allows FAISS to store massive datasets
+    in RAM.'
+  - This is a brute-force approach and serves as the gold standard for accuracy. However,
+    its search time scales linearly with the number of documents, making it slow for
+    large datasets. For larger datasets, FAISS offers methods that trade some accuracy
+    for speed.
+  - 'The `nprobe` parameter controls how many cells to visit. A higher `nprobe` means
+    better accuracy but slower search. - PQ (Product Quantization): This technique
+    compresses the vectors to reduce their memory footprint.'
+  - The most basic FAISS index is the `IndexFlatL2`. It performs an exhaustive search,
+    computing the L2 distance between the query vector and every other vector in the
+    index. This is a brute-force approach and serves as the gold standard for accuracy.
+  - FAISS (Facebook AI Similarity Search) is a library for efficient similarity search
+    and clustering of dense vectors. It contains algorithms that search in sets of
+    vectors of any size, up to ones that possibly do not fit in RAM. The most basic
+    FAISS index is the `IndexFlatL2`.
+  - These maximum scores are then summed up to get the final query-document score.
+    This approach is more granular than bi-encoders because it allows for token-level
+    matching, but it's much faster than cross-encoders because the expensive joint
+    processing is replaced by a simple MaxSim operation. ColBERTv2 further optimizes
+    this by pre-computing document embeddings and using a compressed representation
+    for the index, making it both fast and memory-efficient.
+  - This is fast but can lose nuance, as the embedding must compress the entire meaning
+    of the text into one vector. On the other hand, cross-encoders (or re-rankers)
+    jointly process the query and a document. This allows for deeper, token-level
+    comparisons, resulting in much higher accuracy.
+  - The "late interaction" happens at search time. For each query embedding, ColBERT
+    finds the maximum similarity score against all document embeddings. These maximum
+    scores are then summed up to get the final query-document score.
+  - For a query, each of its tokens is converted into an embedding. For a document,
+    ColBERT also embeds each of its tokens. The "late interaction" happens at search
+    time.
+  - ColBERT offers a middle ground. It produces multi-vector embeddings for both the
+    query and the document. For a query, each of its tokens is converted into an embedding.
+  - Standard dense retrieval models, often called bi-encoders, independently embed
+    the query and the document into single-vector representations. During search,
+    they compute a single similarity score (like dot-product or cosine similarity)
+    between the query vector and all document vectors. This is fast but can lose nuance,
+    as the embedding must compress the entire meaning of the text into one vector.
+  - This allows for deeper, token-level comparisons, resulting in much higher accuracy.
+    However, this process is extremely slow and not feasible for searching over millions
+    of documents. ColBERT offers a middle ground.
+  - ColBERTv2 is a retrieval model that balances the expressiveness of computationally
+    expensive models with the efficiency of less expressive but faster models. It
+    introduces a "late interaction" mechanism over BERT-based embeddings. Standard
+    dense retrieval models, often called bi-encoders, independently embed the query
+    and the document into single-vector representations.
+  - Retrieval-Augmented Generation (RAG) is a methodology for improving the performance
+    of Large Language Models (LLMs) on knowledge-intensive tasks. It combines a pre-trained
+    parametric memory (the LLM itself) with a non-parametric memory, which is typically
+    a dense vector index of a large corpus like Wikipedia. The core idea is to retrieve
+    relevant documents from the external knowledge source and provide them as context
+    to the LLM when generating an answer.
+  - 'First, it allows the model to access up-to-date, real-time information that was
+    not available in its training data. Second, it provides a way to ground the model''s
+    generations in verifiable evidence, reducing the risk of hallucination and making
+    the outputs more trustworthy. The RAG framework consists of two main components:
+    a retriever and a generator.'
+  - The core idea is to retrieve relevant documents from the external knowledge source
+    and provide them as context to the LLM when generating an answer. This has several
+    advantages. First, it allows the model to access up-to-date, real-time information
+    that was not available in its training data.
