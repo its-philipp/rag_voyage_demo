@@ -18,12 +18,10 @@ jobs:
           python-version: '3.11'
       - name: Install project (dev)
         run: pip install -e '.[dev]'
-      - name: Lint
+      - name: Run pre-commit (lint/format hooks)
         run: |
-          ruff check --version
-          ruff format --version
-          ruff check .
-          ruff format --check .
+          pre-commit --version
+          pre-commit run --all-files --show-diff-on-failure --color always
       - name: Type check
         run: mypy .
       - name: Tests
