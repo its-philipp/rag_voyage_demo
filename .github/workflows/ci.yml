@@ -35,5 +35,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build Docker image
-        run: docker build -t rag-voyage-demo:ci .
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build and push Docker image
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/rag-voyage-demo
+          SHA: ${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE:latest" -t "$IMAGE:$SHA" .
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:$SHA"

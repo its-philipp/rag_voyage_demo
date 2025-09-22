@@ -43,7 +43,6 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
     """
     Main query pipeline: Hybrid Search (dense + sparse) -> Reranking
     """
-    embedding_model = cfg.get("embedding", {}).get("model")
     retrieval_top_m = int(cfg.get("retrieval", {}).get("top_m", 50))
 
     # 1. Dense Retrieval (FAISS)
