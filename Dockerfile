@@ -20,4 +20,4 @@ ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV RERANKER=colbert
 
-CMD ["python", "app.py"]
+CMD ["python", "apps/api.py"]

@@ -17,113 +17,140 @@ A comprehensive RAG (Retrieval-Augmented Generation) system featuring hybrid sea
 
 ### 📊 **Evaluation Framework**
 - Comprehensive evaluation metrics (groundedness, relevance, answer quality)
-- TruLens integration for automated evaluation
 - Baseline comparisons between different RAG approaches
 
 ## Quickstart
 
 ### Prerequisites
 - Python 3.10+
-- Voyage AI API key (set as `VOYAGE_API_KEY` environment variable)
+- Voyage AI API key (set as `VOYAGE_API_KEY`)
+- Optional: `OPENAI_API_KEY` for evaluation feedback metrics
 
 ### Setup
-1. **Clone and setup environment:**
-   ```bash
-   git clone https://github.com/its-philipp/rag_voyage_demo.git
-   cd rag_voyage_demo
-   make setup
-   ```
+1) Clone + install
+```bash
+git clone https://github.com/its-philipp/rag_voyage_demo.git
+cd rag_voyage_demo
+make setup
+```
+2) Configure
+```bash
+cp config_example.yaml config.yaml
+# edit config.yaml as needed
+```
+3) Build indices
+```bash
+make index
+.venv/bin/uv run python scripts/build_bm25_index.py
+```
+4) Query or run API
+```bash
+make query
+# or
+make api  # starts Flask on :8000
+```
+5) Evaluate
+```bash
+make eval
+```
 
-2. **Configure:**
-   ```bash
-   cp config_example.yaml config.yaml
-   # Edit config.yaml with your settings
-   ```
+## Docker
+Build and run the API:
+```bash
+make docker-build
+make docker-run
+# health
+curl -s http://localhost:8000/health
+# search
+curl -s -X POST http://localhost:8000/search -H 'Content-Type: application/json' -d '{"query":"What is ColBERT?"}'
+```
+CI publishes images to GHCR as `ghcr.io/<owner>/rag-voyage-demo:latest` and `:<git-sha>`.
 
-3. **Build indices:**
-   ```bash
-   make index
-   ```
+## Key Scripts
+- `build_index.py` — Build FAISS index (reads config; writes to `index/`)
+- `query.py` — Hybrid search + reranking pipeline
+- `scripts/prepare_data.py` — Generate `data/sample_docs.jsonl` (uses `data/corpus/` if present)
+- `scripts/build_bm25_index.py` — Build BM25 index to `index_bm25/`
+- `scripts/ingest_folder.py` — Convert a folder of `.md/.txt` to JSONL
+- `eval/run_evaluation.py` — Baseline vs Agentic evaluation with metrics
 
-4. **Test queries:**
-   ```bash
-   make query
-   # Or run specific queries
-   echo "What is RAG?" | make query
-   ```
-
-5. **Run evaluations:**
-   ```bash
-   make eval
-   ```
-
-## Architecture
-
-### Core Components
-- **`src/voyage_client.py`** — Voyage embeddings API client
-- **`src/chunking.py`** — Document chunking with context preservation
-- **`src/sparse_retriever.py`** — BM25 sparse retrieval
-- **`src/colbert_reranker.py`** — ColBERT late-interaction reranking
-- **`src/cross_encoder_reranker.py`** — Cross-encoder reranking fallback
-- **`src/agentic_rag.py`** — Agentic RAG with multi-step reasoning
-
-### Scripts & Tools
-- **`build_index.py`** — Build FAISS and BM25 indices
-- **`query.py`** — Query pipeline with hybrid search + reranking
-- **`scripts/build_bm25_index.py`** — Build BM25 index
-- **`scripts/prepare_data.py`** — Data preparation utilities
-
-### Evaluation
-- **`eval/run_evaluation.py`** — Comprehensive evaluation suite
-- **`eval/feedback.py`** — Custom evaluation metrics
-- **`eval/reports/`** — Baseline evaluation results
-
-## Configuration
-
-Key settings in `config.yaml`:
+## Config highlights (`config.yaml`)
 ```yaml
 embedding:
-  model: voyage-2  # or voyage-context-3
+  provider: voyage
+  model: voyage-2
   dim: 1024
+  api_key_env: VOYAGE_API_KEY
+
+faiss:
+  type: ivf_pq
+  nlist: 16
+  m: 32
+  nprobe: 16
+  nbits: 6
 
 retrieval:
-  top_m: 200  # Dense/sparse candidates
-  top_k: 20   # Final results after reranking
+  top_m: 200
+  top_k: 20
 
 reranker:
+  enabled: true
+  type: colbert
   colbert_model: colbert-ir/colbertv2.0
-  device: cpu   # or cuda/mps
+  reranker_k: 10
+  device: cpu
+
+index_path: "./index"
+bm25_index_path: "./index_bm25"
 ```
 
-## Performance Notes
-
-- **ColBERT**: Benefits greatly from GPU acceleration
-- **Apple Silicon**: May have compatibility issues with PyTorch/ML libraries
-- **AMD Systems**: Generally work better for ML workloads
-- **CPU Fallback**: All components support CPU execution
-
-## Development
-
-### Available Commands
+## Data ingestion
+- Place `.md`/`.txt` in `data/corpus/` then:
 ```bash
-make setup     # Install dependencies with uv
-make index     # Build FAISS and BM25 indices
-make query     # Run sample queries
-make eval      # Run evaluation suite
-make format    # Format code with black/ruff
-make lint      # Run ruff linter
-make test      # Run pytest suite
-make type      # Run mypy type checking
+.venv/bin/uv run python scripts/prepare_data.py
+make index
+.venv/bin/uv run python scripts/build_bm25_index.py
+```
+- Or ingest an external folder into JSONL:
+```bash
+.venv/bin/uv run python scripts/ingest_folder.py /path/to/folder data/sample_docs.jsonl
+make index
+.venv/bin/uv run python scripts/build_bm25_index.py
 ```
 
-### Project Structure
+## Dev commands
+```bash
+make setup
+make index
+make query
+make api
+make eval
+make format
+make lint
+make test
+make type
 ```
-├── src/                    # Core source code
-├── scripts/               # Utility scripts
-├── eval/                  # Evaluation framework
-├── data/                  # Sample documents
-├── tests/                 # Test suite
-├── config.yaml            # Configuration
-├── pyproject.toml         # Dependencies (uv)
-└── uv.lock               # Locked dependencies
+
+## Project layout
+```
+├── src/                     # Core code
+├── scripts/                 # Utilities & ingestion
+├── eval/                    # Evaluation & reports
+├── data/                    # Sample docs & corpus/
+├── index/, index_bm25/      # Built indexes
+├── apps/api.py              # Flask API
+├── Dockerfile               # Container build
+├── .github/workflows/ci.yml # CI: lint/type/test + GHCR
+├── config.yaml              # Runtime config
+├── pyproject.toml           # Dependencies
+└── uv.lock                  # Lockfile
+```
+
+## CI/CD
+- GitHub Actions: lint (ruff), format check, type (mypy), test (pytest)
+- Docker build & publish to GHCR
+- Optional: pre-commit for local hooks
+```bash
+.venv/bin/uv run pre-commit install
+.venv/bin/uv run pre-commit run --all-files
 ```

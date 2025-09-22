@@ -31,7 +31,7 @@ eval:
 	.venv/bin/uv run python -m eval.run_evaluation
 
 api:
-	.venv/bin/uv run python app.py
+	.venv/bin/uv run python apps/api.py
 
 docker-build:
 	docker build -t rag-voyage-demo:latest .
