@@ -12,7 +12,7 @@ root = Path(__file__).resolve().parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
-from query import query_system  # noqa: E402
+from src.pipeline import query_system  # noqa: E402
 from eval.feedback import groundedness_score, relevance_score  # noqa: E402
 from src.agentic_rag import AgenticRAG  # noqa: E402
 

@@ -66,8 +66,8 @@ curl -s -X POST http://localhost:8000/search -H 'Content-Type: application/json'
 CI publishes images to GHCR as `ghcr.io/<owner>/rag-voyage-demo:latest` and `:<git-sha>`.
 
 ## Key Scripts
-- `build_index.py` — Build FAISS index (reads config; writes to `index/`)
-- `query.py` — Hybrid search + reranking pipeline
+- `src/index_build.py` — Build FAISS index (reads config; writes to `index/`)
+- `src/pipeline.py` — Hybrid search + reranking pipeline
 - `scripts/prepare_data.py` — Generate `data/sample_docs.jsonl` (uses `data/corpus/` if present)
 - `scripts/build_bm25_index.py` — Build BM25 index to `index_bm25/`
 - `scripts/ingest_folder.py` — Convert a folder of `.md/.txt` to JSONL

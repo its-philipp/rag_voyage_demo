@@ -2,6 +2,7 @@ import torch
 from typing import List
 from colbert.infra import Run
 from colbert.modeling.colbert import ColBERT
+from colbert.infra.config.config import ColBERTReranker as _unused  # noqa: F401
 from colbert.infra.config.config import ColBERTConfig
 from colbert.modeling.tokenization.query_tokenization import QueryTokenizer
 from colbert.modeling.tokenization.doc_tokenization import DocTokenizer
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 # Note: For lightweight reranking, we DON'T need to prebuild a ColBERT index if
 # we only rerank a small set of candidates. We'll encode on the fly.
 # This class wraps scoring of (query, passages) via late interaction.
+
+
 class ColBERTReranker:
     def __init__(
         self,

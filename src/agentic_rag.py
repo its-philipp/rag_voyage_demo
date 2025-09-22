@@ -3,7 +3,7 @@ import json
 from typing import List, Dict, Any
 from openai import OpenAI
 
-from query import query_system
+from src.pipeline import query_system
 
 # --- Agent Components ---
 
