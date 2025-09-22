@@ -25,7 +25,7 @@ def create_app(query_func=None) -> Flask:
         # Lazy injection to avoid heavy imports during testing
         nonlocal query_func
         if query_func is None:
-            from src.pipeline import query_system as _query_system  # type: ignore
+            from src.pipeline import query_system as _query_system
 
             query_func = _query_system
         results = query_func(q, cfg)
