@@ -1,29 +1,43 @@
-.PHONY: help index query eval format lint type test setup
+.PHONY: help setup index query eval format lint type test
 
 help:
-	@echo "Targets: setup, index, query, eval, format, lint, type, test"
+	@echo "Makefile for RAG Demo"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make setup   - Create venv and install all dependencies"
+	@echo "  make index   - Build the FAISS index"
+	@echo "  make query   - Run a sample query"
+	@echo "  make eval    - Run the evaluation script"
+	@echo "  make format  - Run black and ruff formatters"
+	@echo "  make lint    - Run ruff linter"
+	@echo "  make type    - Run mypy type checker"
+	@echo "  make test    - Run pytest"
 
 setup:
-	@echo "Using uv to sync dependencies (including dev group)" && uv sync -G dev --frozen || uv sync -G dev
+	@if [ ! -d ".venv" ]; then \
+		echo "Creating virtual environment in .venv with uv..."; \
+		uv venv .venv; \
+	fi
+	uv pip install --python .venv/bin/python uv
+	.venv/bin/uv pip install -e '.[dev]'
 
 index:
-	uv run python build_index.py
+	.venv/bin/uv run python build_index.py
 
 query:
-	uv run python query.py
+	.venv/bin/uv run python query.py
 
-# Placeholder; Phase 1 will create eval runner
 eval:
-	@echo "Eval runner not implemented yet. Will be added in Phase 1."
+	.venv/bin/uv run python -v eval/run_evaluation.py
 
 format:
-	uv run black .
+	.venv/bin/uv run black . && .venv/bin/uv run ruff format .
 
 lint:
-	uv run ruff check .
+	.venv/bin/uv run ruff check .
 
 type:
-	uv run mypy .
+	.venv/bin/uv run mypy .
 
 test:
-	uv run pytest -q
+	.venv/bin/uv run pytest

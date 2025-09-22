@@ -5,6 +5,7 @@ from colbert.modeling.colbert import ColBERT
 from colbert.infra.config.config import ColBERTConfig
 from colbert.modeling.tokenization.query_tokenization import QueryTokenizer
 from colbert.modeling.tokenization.doc_tokenization import DocTokenizer
+from dotenv import load_dotenv
 
 
 # Note: For lightweight reranking, we DON'T need to prebuild a ColBERT index if
@@ -19,15 +20,22 @@ class ColBERTReranker:
         device: str = None,
     ):
         self.device = device or (
-            "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps" if torch.backends.mps.is_available() else "cpu"
         )
         self.cfg = ColBERTConfig(doc_maxlen=max_doc_len, query_maxlen=max_query_len, nbits=2)
         self.model_name = model_name
         self._load()
 
     def _load(self):
+        # ensure env (HF token) is loaded if present
+        load_dotenv()
         # initialize Run context and model
         self.run = Run()
+        # Ensure checkpoint is set in config to avoid None repo id in HF
+        if not getattr(self.cfg, "checkpoint", None):
+            self.cfg.checkpoint = self.model_name
         self.colbert = ColBERT(name=self.model_name, colbert_config=self.cfg)
         self.colbert.to(self.device)
         self.colbert.eval()

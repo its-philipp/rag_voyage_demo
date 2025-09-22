@@ -5,85 +5,128 @@ import numpy as np
 import faiss
 import logging
 import time
-from typing import Dict
+from typing import Dict, Any, Tuple, List
 from src.voyage_client import VoyageClient
-from src.colbert_reranker import ColBERTReranker
 from src.cross_encoder_reranker import CrossEncoderReranker
+from src.colbert_reranker import ColBERTReranker
+from src.sparse_retriever import SparseRetriever
+import argparse
+from dotenv import load_dotenv
 
 
-def load_index(index_dir):
+def load_index(cfg: Dict[str, Any]) -> Tuple[faiss.Index, List[Dict]]:
     logger = logging.getLogger(__name__)
-    index_path = os.path.join(index_dir, "voyage.faiss")
-    vectors_path = os.path.join(index_dir, "vectors.npy")
-    meta_path = os.path.join(index_dir, "meta.jsonl")
+    index_path = os.path.join(cfg["index_dir"], "voyage.faiss")
+    meta_path = os.path.join(cfg["index_dir"], "meta.jsonl")
     index = faiss.read_index(index_path)
-    vecs = np.load(vectors_path)
     with open(meta_path, "r") as fh:
         meta = [json.loads(line) for line in fh]
-    logger.info(
-        "Loaded index from %s with dim=%s and %s metadata rows",
-        index_path,
-        vecs.shape[1],
-        len(meta),
-    )
-    return index, vecs.shape[1], meta
+    logger.info(f"Index loaded: {cfg['index_dir']} num_chks={len(meta)}")
+    return index, meta
 
 
-def ann_search(index, qvec, top_m):
-    # ensure normalized for IP
-    faiss.normalize_L2(qvec)
-    scores, ids = index.search(qvec, top_m)
-    return scores[0], ids[0]
+def reciprocal_rank_fusion(
+    results_list: List[List[Tuple[str, float]]], k: int = 60
+) -> Dict[str, float]:
+    fused_scores: Dict[str, float] = {}
+    for results in results_list:
+        for i, (doc_id, _) in enumerate(results):
+            rank = i + 1
+            if doc_id not in fused_scores:
+                fused_scores[doc_id] = 0.0
+            fused_scores[doc_id] += 1.0 / (k + rank)
+
+    return dict(sorted(fused_scores.items(), key=lambda item: item[1], reverse=True))
 
 
-def query_system(user_query: str, cfg: Dict):
-    logger = logging.getLogger(__name__)
-    logger.info("Query start: '%s'", user_query)
+def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
+    """
+    Main query pipeline: Hybrid Search (dense + sparse) -> Reranking
+    """
+    embedding_model = cfg.get("embedding", {}).get("model")
+    retrieval_top_m = int(cfg.get("retrieval", {}).get("top_m", 50))
 
-    api_key = os.getenv(cfg["embedding"]["api_key_env"], "")
-    vc = VoyageClient(api_key, model=cfg["embedding"]["model"])
-    index, dim, meta = load_index(cfg["index_dir"])
+    # 1. Dense Retrieval (FAISS)
+    start_time = time.time()
+    query_embedding = voyage_client.get_embedding(query, model=embedding_model)
+    D, indices = index.search(np.array([query_embedding]), k=retrieval_top_m)
+    logger.info(f"ANN search took: {(time.time() - start_time) * 1000:.2f} ms")
 
-    t0 = time.perf_counter()
-    qvec = vc.embed([user_query]).astype("float32")
-    t_embed_ms = (time.perf_counter() - t0) * 1000
-    logger.info("Embedded query in %.1f ms", t_embed_ms)
+    dense_results: List[Tuple[str, float]] = []
+    for i in indices[0]:
+        if i != -1:
+            dense_results.append((meta[i]["doc_id"], 1.0))
 
-    t1 = time.perf_counter()
-    scores, ids = ann_search(index, qvec, cfg["retrieval"]["top_m"])
-    t_retr_ms = (time.perf_counter() - t1) * 1000
-    logger.info("ANN search done in %.1f ms (top_m=%s)", t_retr_ms, cfg["retrieval"]["top_m"])
+    # 2. Sparse Retrieval (BM25)
+    sparse_retriever = SparseRetriever(index_dir=cfg["bm25_index_path"])
+    sparse_results = sparse_retriever.search(query, top_k=retrieval_top_m)
 
-    candidates = [meta[i] for i in ids]
-    passages = [f"{c['title']}\n{c['text']}".strip() for c in candidates]
+    # 3. Reciprocal Rank Fusion
+    fused_results = reciprocal_rank_fusion([dense_results, sparse_results])
+    fused_doc_ids = list(fused_results.keys())
 
-    # rerank
-    if cfg["reranker"]["type"] == "colbert":
-        reranker = ColBERTReranker(
-            model_name=cfg["reranker"]["colbert_model"],
-            max_query_len=cfg["reranker"]["max_query_len"],
-            max_doc_len=cfg["reranker"]["max_doc_len"],
-        )
+    all_docs: Dict[str, Dict] = {}
+    for item in meta:
+        if item["doc_id"] not in all_docs:
+            all_docs[item["doc_id"]] = {
+                "doc_id": item["doc_id"],
+                "text": item["text"],
+                "title": item["title"],
+            }
+
+    docs_to_rerank: List[Tuple[str, str]] = []
+    for doc_id in fused_doc_ids:
+        if doc_id in all_docs:
+            docs_to_rerank.append((all_docs[doc_id]["doc_id"], all_docs[doc_id]["text"]))
+
+    # 4. Reranking (support both ColBERT and CrossEncoder interfaces)
+    reranker_cfg = cfg.get("reranker")
+    if reranker_cfg and reranker_cfg.get("enabled", False):
+        reranker_model = reranker_cfg.get("reranker_model")
+        reranker_k = reranker_cfg.get("reranker_k", 10)
+        device = reranker_cfg.get("device")
+
+        reranker = CrossEncoderReranker(reranker_model, device=device)
+
+        logger.info(f"Reranking with {reranker_model}...")
+        reranked_chunks = reranker(query, docs_to_rerank)[:reranker_k]
+        final_chunks = reranked_chunks
     else:
+        final_chunks = docs_to_rerank
+
+    return final_chunks
+
+
+# --- Global Inits ---
+cfg = yaml.safe_load(open("config.yaml"))
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+index, meta = load_index(cfg)
+voyage_client = VoyageClient(os.getenv("VOYAGE_API_KEY"))
+
+# Choose reranker per env or fallback
+use_cross = os.getenv("RERANKER", "").lower() == "crossencoder"
+reranker: Any
+if not use_cross:
+    try:
+        colbert_model_name = cfg.get("reranker", {}).get("colbert_model") or os.getenv(
+            "COLBERT_MODEL", "colbert-ir/colbertv2.0"
+        )
+        reranker = ColBERTReranker(model_name=colbert_model_name, device=cfg.get("device", "cpu"))
+    except Exception as e:
+        logging.warning(f"ColBERT init failed ({e}); falling back to CrossEncoder.")
         reranker = CrossEncoderReranker()
-
-    t2 = time.perf_counter()
-    rerank_scores = reranker.score(user_query, passages)
-    t_rerank_ms = (time.perf_counter() - t2) * 1000
-    logger.info("Reranked %s passages in %.1f ms", len(passages), t_rerank_ms)
-
-    ranked = sorted(zip(rerank_scores, candidates), key=lambda x: x[0], reverse=True)
-    top_k = ranked[: cfg["retrieval"]["top_k"]]
-    logger.info("Returning top_k=%s results", cfg["retrieval"]["top_k"])
-    return top_k
-
+else:
+    reranker = CrossEncoderReranker()
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-    )
-    cfg = yaml.safe_load(open("config.yaml"))
-    results = query_system("How does ColBERT compare to cross-encoders?", cfg)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("query", help="The query to search for.")
+    args = parser.parse_args()
+
+    results = query_system(args.query, cfg)
     for s, c in results:
         print(f"{s:.3f}\t{c['doc_id']}\t{c['text'][:120]}...")

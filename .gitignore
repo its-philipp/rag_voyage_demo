@@ -27,7 +27,18 @@ index/
 # Data and evals
 /data/
 /eval/reports/
+/eval/
 /evals/
+
+# Build artifacts
+/build/
+default.sqlite
+
+# BM25 index
+/index_bm25/
+
+# Temporary files
+/tmp_reqs.txt
 
 # Docker
 *.tar

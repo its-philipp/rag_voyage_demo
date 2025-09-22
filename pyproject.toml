@@ -1,40 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "rag-colbert-voyage-demo"
+name = "rag-voyage-demo"
 version = "0.1.0"
-description = "RAG with Voyage embeddings, FAISS, and ColBERT reranking"
-requires-python = ">=3.11"
+description = "A demo of a RAG system with Voyage embeddings and a reranker"
+requires-python = ">=3.10, <3.14"
 readme = "README.md"
 license = { text = "MIT" }
 
-# Runtime dependencies (migrated from requirements.txt)
 dependencies = [
-  "faiss-cpu>=1.8.0",
-  "numpy>=1.26",
-  "pandas>=2.0",
-  "pyyaml>=6.0",
-  "tqdm>=4.66",
-  "httpx>=0.27",
-  "colbert-ai>=0.2.19",
-  "sentence-transformers>=3.0.1",
-  "torch>=2.2",
-  "transformers>=4.41",
+    "voyageai>=0.2.1",
+    "pyyaml>=6.0.1",
+    "faiss-cpu>=1.8.0",
+    "numpy>=1.26.4",
+    "torch>=2.2.2",
+    "tqdm>=4.66.2",
+    "python-dotenv>=1.0.1",
+    "rank-bm25>=0.2.2",
+    "transformers==4.36.0",
+    "sentence-transformers>=2.2.2",
+    "colbert-ai>=0.2.19",
 ]
 
 [project.optional-dependencies]
 # Dev tools installed via `uv sync -G dev` or `uv sync --all-extras`
 dev = [
-  "black",
-  "ruff",
-  "mypy",
-  "pytest",
-  "pre-commit",
+    "black>=24.4.2",
+    "ruff>=0.4.4",
+    "mypy>=1.10.0",
+    "pytest>=8.2.1",
+    "pre-commit>=3.7.1",
+    "types-PyYAML>=6.0.12.12",
+    "trulens-eval>=0.23.0",
+    "openai<2,>=1.1.1",
+    "langchain-community>=0.2.0",
 ]
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 
 [tool.black]
-line-length = 120
+line-length = 100
 
 [tool.mypy]
 python_version = "3.11"
@@ -42,6 +50,7 @@ ignore_missing_imports = true
 strict_optional = false
 warn_unused_ignores = true
 explicit_package_bases = true
+namespace_packages = true
 files = [
   "src",
   "build_index.py",

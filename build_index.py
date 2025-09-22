@@ -8,6 +8,7 @@ import time
 from tqdm import tqdm
 from src.voyage_client import VoyageClient
 from src.chunking import make_chunks_with_context
+from dotenv import load_dotenv
 
 
 def load_docs(path):
@@ -78,7 +79,11 @@ def build_faiss(index_dir, vecs, index_cfg):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+    )
+    # Load environment variables from .env for API keys
+    load_dotenv()
     # Load config relative to this script so running the script from a
     # different working directory still finds the config file.
     script_dir = os.path.dirname(os.path.abspath(__file__))

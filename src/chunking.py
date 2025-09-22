@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict
+from typing import List, Dict, Any
 
 
 def simple_sentence_split(text: str) -> List[str]:
@@ -7,10 +7,12 @@ def simple_sentence_split(text: str) -> List[str]:
     return [p for p in parts if p]
 
 
-def make_chunks_with_context(doc: Dict, max_sentences: int = 3, overlap: int = 1) -> List[Dict]:
+def make_chunks_with_context(
+    doc: Dict[str, Any], max_sentences: int = 3, overlap: int = 1
+) -> List[Dict[str, Any]]:
     """Create small sentence-window chunks; attach title as lightweight context."""
     sents = simple_sentence_split(doc["text"])
-    chunks = []
+    chunks: List[Dict[str, Any]] = []
     i = 0
     while i < len(sents):
         window = sents[i : i + max_sentences]
