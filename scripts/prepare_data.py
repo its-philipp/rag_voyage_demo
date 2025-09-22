@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import glob
 
 # --- Source Data ---
 
@@ -86,8 +87,31 @@ Hybrid search resolves this by running both types of queries simultaneously. The
 # --- Script Logic ---
 
 
+def load_corpus_from_folder(corpus_dir: Path):
+    """Load .md/.txt files from corpus_dir into doc dicts with incremental IDs."""
+    docs = []
+    patterns = ["*.md", "*.markdown", "*.txt"]
+    files = []
+    for pat in patterns:
+        files.extend(sorted(corpus_dir.rglob(pat)))
+    for i, fp in enumerate(files, start=1):
+        try:
+            text = fp.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        title = fp.stem.replace("_", " ").replace("-", " ")
+        doc = {"doc_id": f"corpus_{i:06d}", "title": title, "text": text}
+        docs.append(doc)
+    return docs
+
+
 def main():
-    """Create a new sample_docs.jsonl from high-quality sources."""
+    """Create a new sample_docs.jsonl or expand it with data/corpus/* files if present."""
+    project_root = Path(__file__).resolve().parents[1]
+    out_path = project_root / "data" / "sample_docs.jsonl"
+    out_path.parent.mkdir(exist_ok=True)
+
+    # Start with built-in high-quality docs
     docs = [
         {"doc_id": "doc_000001", "title": "ColBERT v2", "text": colbert_text},
         {"doc_id": "doc_000002", "title": "FAISS Indexes", "text": faiss_text},
@@ -97,14 +121,21 @@ def main():
         {"doc_id": "doc_000006", "title": "Hybrid Search", "text": hybrid_search_text},
     ]
 
-    out_path = Path(__file__).resolve().parents[1] / "data" / "sample_docs.jsonl"
-    out_path.parent.mkdir(exist_ok=True)
+    # If user has added more high-quality docs under data/corpus/, append them
+    corpus_dir = project_root / "data" / "corpus"
+    if corpus_dir.exists():
+        extra = load_corpus_from_folder(corpus_dir)
+        # Avoid doc_id collisions by continuing the sequence
+        next_id = len(docs) + 1
+        for idx, doc in enumerate(extra, start=next_id):
+            doc["doc_id"] = f"doc_{idx:06d}"
+        docs.extend(extra)
 
-    with out_path.open("w") as f:
+    with out_path.open("w", encoding="utf-8") as f:
         for doc in docs:
             f.write(json.dumps(doc, ensure_ascii=False) + "\n")
 
-    print(f"Wrote {len(docs)} high-quality documents to {out_path}")
+    print(f"Wrote {len(docs)} documents to {out_path}")
 
 
 if __name__ == "__main__":

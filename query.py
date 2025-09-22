@@ -48,7 +48,7 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
 
     # 1. Dense Retrieval (FAISS)
     start_time = time.time()
-    query_embedding = voyage_client.get_embedding(query, model=embedding_model)
+    query_embedding = voyage_client.embed([query])[0]
     D, indices = index.search(np.array([query_embedding]), k=retrieval_top_m)
     logger.info(f"ANN search took: {(time.time() - start_time) * 1000:.2f} ms")
 
@@ -79,20 +79,51 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
         if doc_id in all_docs:
             docs_to_rerank.append((all_docs[doc_id]["doc_id"], all_docs[doc_id]["text"]))
 
-    # 4. Reranking (support both ColBERT and CrossEncoder interfaces)
-    reranker_cfg = cfg.get("reranker")
-    if reranker_cfg and reranker_cfg.get("enabled", False):
-        reranker_model = reranker_cfg.get("reranker_model")
-        reranker_k = reranker_cfg.get("reranker_k", 10)
-        device = reranker_cfg.get("device")
+    # 4. Reranking (select between ColBERT and CrossEncoder)
+    reranker_cfg = cfg.get("reranker", {}) or {}
+    reranker_enabled = bool(reranker_cfg.get("enabled", False))
+    # Priority: env RERANKER overrides config; accepted values: 'colbert', 'crossencoder', 'none'
+    env_choice = os.getenv("RERANKER", "").strip().lower()
+    cfg_choice = reranker_cfg.get("type")  # optional; 'colbert'|'crossencoder'|'none'
+    choice = env_choice or (cfg_choice or ("crossencoder" if reranker_enabled else "none"))
 
-        reranker = CrossEncoderReranker(reranker_model, device=device)
-
-        logger.info(f"Reranking with {reranker_model}...")
-        reranked_chunks = reranker(query, docs_to_rerank)[:reranker_k]
-        final_chunks = reranked_chunks
+    if choice == "colbert" and reranker_enabled:
+        reranker_k = int(reranker_cfg.get("reranker_k", 10))
+        colbert_model = reranker_cfg.get("colbert_model", "colbert-ir/colbertv2.0")
+        device = reranker_cfg.get("device") or cfg.get("device") or None
+        passages = [text for (_doc_id, text) in docs_to_rerank]
+        if passages:
+            cb_reranker = ColBERTReranker(model_name=colbert_model, device=device)
+            scores = cb_reranker.score(query, passages)
+            scored = list(
+                zip(scores, [all_docs[doc_id] for (doc_id, _text) in docs_to_rerank])
+            )
+            reranked_chunks: List[Tuple[float, Dict]] = sorted(
+                scored, key=lambda x: x[0], reverse=True
+            )[:reranker_k]
+            final_chunks = reranked_chunks
+        else:
+            final_chunks = []
+    elif choice == "crossencoder" and reranker_enabled:
+        reranker_k = int(reranker_cfg.get("reranker_k", 10))
+        cross_encoder_model = reranker_cfg.get(
+            "cross_encoder_model", "cross-encoder/ms-marco-MiniLM-L-6-v2"
+        )
+        passages = [text for (_doc_id, text) in docs_to_rerank]
+        if passages:
+            ce_reranker = CrossEncoderReranker(cross_encoder_model)
+            scores = ce_reranker.score(query, passages)
+            scored = list(
+                zip(scores, [all_docs[doc_id] for (doc_id, _text) in docs_to_rerank])
+            )
+            reranked_chunks = sorted(scored, key=lambda x: x[0], reverse=True)[:reranker_k]
+            final_chunks = reranked_chunks
+        else:
+            final_chunks = []
     else:
-        final_chunks = docs_to_rerank
+        # No reranking: return fused results with a dummy score
+        fallback_top_k = int(cfg.get("retrieval", {}).get("top_k", 20))
+        final_chunks = [(1.0, all_docs[doc_id]) for doc_id in fused_doc_ids[:fallback_top_k]]
 
     return final_chunks
 
@@ -105,22 +136,12 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 index, meta = load_index(cfg)
-voyage_client = VoyageClient(os.getenv("VOYAGE_API_KEY"))
+voyage_client = VoyageClient(
+    os.getenv("VOYAGE_API_KEY"),
+    model=cfg.get("embedding", {}).get("model", "voyage-context-3"),
+)
 
-# Choose reranker per env or fallback
-use_cross = os.getenv("RERANKER", "").lower() == "crossencoder"
-reranker: Any
-if not use_cross:
-    try:
-        colbert_model_name = cfg.get("reranker", {}).get("colbert_model") or os.getenv(
-            "COLBERT_MODEL", "colbert-ir/colbertv2.0"
-        )
-        reranker = ColBERTReranker(model_name=colbert_model_name, device=cfg.get("device", "cpu"))
-    except Exception as e:
-        logging.warning(f"ColBERT init failed ({e}); falling back to CrossEncoder.")
-        reranker = CrossEncoderReranker()
-else:
-    reranker = CrossEncoderReranker()
+# Note: reranker models are initialized lazily inside query_system based on config/env.
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

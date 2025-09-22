@@ -39,15 +39,16 @@ def build_faiss(index_dir, vecs, index_cfg):
     elif index_type == "ivf_pq":
         nlist = int(index_cfg.get("nlist", 4096))
         m = int(index_cfg.get("m", 32))
+        nbits = int(index_cfg.get("nbits", 8))
         quantizer = faiss.IndexFlatIP(d)
-        # FAISS requires a larger number of training points than nlist for clustering.
-        # Empirically require at least 4 * nlist training points; otherwise fall back
-        # to a flat index to avoid errors like "Number of training points (N) should
-        # be at least as large as number of clusters (k)" when N < k.
-        min_train_needed = int(nlist * 4)
+        # Training requirements:
+        # - IVF coarse quantizer: need significantly more samples than nlist (empirical 4x)
+        # - PQ codebooks: need at least 2**nbits samples to train k-means per subvector
+        min_train_needed = max(int(nlist * 4), 2 ** nbits)
         if len(vecs) < min_train_needed:
             print(
-                f"Warning: only {len(vecs)} vectors available but IVFPQ with nlist={nlist} requires at least {min_train_needed} training points;"
+                f"Warning: only {len(vecs)} vectors available but IVFPQ (nlist={nlist}, m={m}, nbits={nbits}) "
+                f"requires at least {min_train_needed} training points;"
                 " falling back to flat index to avoid FAISS training error."
             )
             index = faiss.IndexFlatIP(d)
@@ -55,7 +56,7 @@ def build_faiss(index_dir, vecs, index_cfg):
             index.add(vecs)
             faiss.write_index(index, os.path.join(index_dir, "voyage.faiss"))
             return index
-        index = faiss.IndexIVFPQ(quantizer, d, nlist, m, 8, faiss.METRIC_INNER_PRODUCT)
+        index = faiss.IndexIVFPQ(quantizer, d, nlist, m, nbits, faiss.METRIC_INNER_PRODUCT)
         index.nprobe = int(index_cfg.get("nprobe", 16))
         # train
         train_samples = vecs[np.random.choice(len(vecs), min(20000, len(vecs)), replace=False)]

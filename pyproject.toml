@@ -22,6 +22,7 @@ dependencies = [
     "transformers==4.36.0",
     "sentence-transformers>=2.2.2",
     "colbert-ai>=0.2.19",
+    "flask>=3.0.0",
 ]
 
 [project.optional-dependencies]

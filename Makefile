@@ -28,7 +28,16 @@ query:
 	.venv/bin/uv run python query.py
 
 eval:
-	.venv/bin/uv run python -v eval/run_evaluation.py
+	.venv/bin/uv run python -m eval.run_evaluation
+
+api:
+	.venv/bin/uv run python app.py
+
+docker-build:
+	docker build -t rag-voyage-demo:latest .
+
+docker-run:
+	docker run --rm -p 8000:8000 --env-file .env rag-voyage-demo:latest
 
 format:
 	.venv/bin/uv run black . && .venv/bin/uv run ruff format .

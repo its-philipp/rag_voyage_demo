@@ -88,25 +88,22 @@ class AgenticRAG:
         sub_queries_str = "\n- ".join(sub_queries)
 
         prompt = f"""
-        You are an expert research assistant. Your goal is to provide a comprehensive and well-supported answer
-        to the user's question, based *only* on the provided context.
+        You are an expert research assistant. Provide an answer using ONLY the provided context.
 
         Original Question: "{query}"
 
-        To answer this question, the following sub-questions were investigated:
+        Sub-questions investigated:
         - {sub_queries_str}
 
-        Here is the retrieved context from a knowledge base:
+        Context:
         ---
         {context_str}
         ---
 
         Instructions:
-        1. Carefully review the provided context to understand the information it contains.
-        2. Synthesize a single, cohesive answer to the Original Question.
-        3. Do not use any information outside of the provided context. If the context is insufficient,
-           state that you cannot fully answer the question with the given information.
-        4. Be clear, concise, and directly address the user's original question.
+        - Cite evidence by quoting short snippets and, when possible, include the source doc_id.
+        - If the context is insufficient for any part, state that explicitly.
+        - Keep the answer concise and grounded.
 
         Final Answer:
         """

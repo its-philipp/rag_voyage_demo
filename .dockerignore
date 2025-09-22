@@ -1,0 +1,17 @@
+.venv
+__pycache__
+*.pyc
+.git
+.gitignore
+.env
+index
+index_bm25
+data
+node_modules
+.DS_Store
+.cache
+*.egg-info
+build
+dist
+.pytest_cache
+coverage*

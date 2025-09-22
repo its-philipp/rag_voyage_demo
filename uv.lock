@@ -3411,6 +3411,7 @@ source = { editable = "." }
 dependencies = [
     { name = "colbert-ai" },
     { name = "faiss-cpu" },
+    { name = "flask" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "python-dotenv" },
@@ -3441,6 +3442,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.4.2" },
     { name = "colbert-ai", specifier = ">=0.2.19" },
     { name = "faiss-cpu", specifier = ">=1.8.0" },
+    { name = "flask", specifier = ">=3.0.0" },
     { name = "langchain-community", marker = "extra == 'dev'", specifier = ">=0.2.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0" },
     { name = "numpy", specifier = ">=1.26.4" },

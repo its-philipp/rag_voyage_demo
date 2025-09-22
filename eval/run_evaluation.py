@@ -33,8 +33,9 @@ class RAGApp:
         """Synthesize an answer from contexts."""
         context_str = "\n\n".join(contexts[:10])
         prompt = (
-            "You are a helpful assistant. Answer the question using the provided context. "
-            "Prefer evidence from context; if parts are missing, state uncertainties but still provide your best, concise answer.\n\n"
+            "You are a helpful assistant. Answer ONLY using the provided context. "
+            "Cite evidence by quoting short snippets and include their doc_id if available. "
+            "If context is insufficient, say so explicitly. Keep the answer concise.\n\n"
             f"Context:\n{context_str}\n\nQuestion: {query}\nAnswer:"
         )
         resp = self.oa_client.chat.completions.create(

@@ -1,13 +1,21 @@
 import json
 import pickle
 from pathlib import Path
+import yaml
 from rank_bm25 import BM25Okapi
 
 
 def main():
     """Builds and saves a BM25 index from the project's documents."""
-    data_path = Path(__file__).resolve().parents[1] / "data" / "sample_docs.jsonl"
-    index_dir = Path(__file__).resolve().parents[1] / "index_bm25"
+    project_root = Path(__file__).resolve().parents[1]
+    cfg = yaml.safe_load(open(project_root / "config.yaml", "r"))
+    # Read from config if relative path; otherwise use absolute
+    data_path = Path(cfg.get("data_path", project_root / "data" / "sample_docs.jsonl"))
+    if not data_path.is_absolute():
+        data_path = project_root / data_path
+    index_dir = Path(cfg.get("bm25_index_path", project_root / "index_bm25"))
+    if not index_dir.is_absolute():
+        index_dir = project_root / index_dir
     index_dir.mkdir(exist_ok=True)
 
     print(f"Loading documents from {data_path}...")
