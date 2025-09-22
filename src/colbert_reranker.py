@@ -2,7 +2,6 @@ import torch
 from typing import List
 from colbert.infra import Run
 from colbert.modeling.colbert import ColBERT
-from colbert.infra.config.config import ColBERTReranker as _unused  # noqa: F401
 from colbert.infra.config.config import ColBERTConfig
 from colbert.modeling.tokenization.query_tokenization import QueryTokenizer
 from colbert.modeling.tokenization.doc_tokenization import DocTokenizer
