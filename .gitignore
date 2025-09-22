@@ -22,7 +22,6 @@ index/
 .rag_env/
 *.faiss
 *.npy
-*.jsonl
 
 # Other evaluation directories
 /evals/
