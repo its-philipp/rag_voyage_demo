@@ -255,24 +255,96 @@ def main():
     topics = list(BASE_TOPICS)
     # Expand to ~50 docs by creating focused variants
     variants = [
-        ("colbert_practical_tips.md", "ColBERT Practical Tips", "Batch queries, cap doc_maxlen, and cache frequent passages. Monitor MaxSim distributions and layer norms for anomalies.\n"),
-        ("faiss_metrics.md", "FAISS Metrics", "Measure recall@K vs. Flat, QPS, and memory footprint. Validate on held-out queries before changing nlist/nprobe."),
-        ("bm25_tokenization.md", "BM25 Tokenization", "Customize tokenization for hyphens, underscores, and code identifiers; extend stopword lists for your domain."),
-        ("hybrid_rrf_k.md", "RRF k Parameter", "Typical k=60 balances aggressiveness; tune per corpus size. Larger k dampens rank differences."),
-        ("eval_canary_queries.md", "Canary Queries", "Include queries targeting rare tokens, synonyms, and numeric identifiers to detect regressions early."),
-        ("agentic_limits.md", "Agentic Limits", "Decompose only when necessary to avoid drifting into irrelevant sub-queries; cap at ~10."),
-        ("context_window_limits.md", "Context Window Limits", "Stay within generator context limits; summarize or trim low-signal passages when needed."),
-        ("reranker_k_tuning.md", "Tuning reranker_k", "Values 10–30 often suffice; increasing beyond may add noise and latency."),
-        ("dense_vector_norms.md", "Vector Normalization", "Normalize L2 for inner-product search; ensure consistent preprocessing at index and query time."),
-        ("data_quality.md", "Data Quality", "Prefer authoritative, concise docs; remove duplicates; enforce consistent titles and doc_ids."),
-        ("index_update_strategies.md", "Index Updates", "Use periodic full rebuilds or append-only with periodic compaction; version artifacts for rollback."),
-        ("infra_costs.md", "Infra Costs", "Batch embedding jobs, use spot instances, and autoscale serving layers to control spend."),
-        ("security_controls.md", "Security Controls", "Manage secrets via vaults, restrict egress, and audit API usage; redact PII early."),
-        ("prompt_citations.md", "Prompting with Citations", "Ask for quotations and cite doc_ids. Enforce that each claim references retrieved evidence."),
-        ("bm25_vs_dense.md", "BM25 vs Dense", "BM25 excels at exact tokens and codes; dense handles paraphrase. Hybrid mitigates both weaknesses."),
-        ("colbert_gpu.md", "ColBERT on GPU", "Significant latency reductions; ensure CUDA versions match PyTorch and Transformers."),
-        ("faiss_ivf_training.md", "IVF Training Data", "Aim for ≥4×nlist training samples; otherwise prefer Flat or HNSW to avoid poor centroids."),
-        ("logging_observability.md", "Observability", "Log query latency breakdown (dense, sparse, fusion, reranker) and top-k overlaps."),
+        (
+            "colbert_practical_tips.md",
+            "ColBERT Practical Tips",
+            "Batch queries, cap doc_maxlen, and cache frequent passages. Monitor MaxSim distributions and layer norms for anomalies.\n",
+        ),
+        (
+            "faiss_metrics.md",
+            "FAISS Metrics",
+            "Measure recall@K vs. Flat, QPS, and memory footprint. Validate on held-out queries before changing nlist/nprobe.",
+        ),
+        (
+            "bm25_tokenization.md",
+            "BM25 Tokenization",
+            "Customize tokenization for hyphens, underscores, and code identifiers; extend stopword lists for your domain.",
+        ),
+        (
+            "hybrid_rrf_k.md",
+            "RRF k Parameter",
+            "Typical k=60 balances aggressiveness; tune per corpus size. Larger k dampens rank differences.",
+        ),
+        (
+            "eval_canary_queries.md",
+            "Canary Queries",
+            "Include queries targeting rare tokens, synonyms, and numeric identifiers to detect regressions early.",
+        ),
+        (
+            "agentic_limits.md",
+            "Agentic Limits",
+            "Decompose only when necessary to avoid drifting into irrelevant sub-queries; cap at ~10.",
+        ),
+        (
+            "context_window_limits.md",
+            "Context Window Limits",
+            "Stay within generator context limits; summarize or trim low-signal passages when needed.",
+        ),
+        (
+            "reranker_k_tuning.md",
+            "Tuning reranker_k",
+            "Values 10–30 often suffice; increasing beyond may add noise and latency.",
+        ),
+        (
+            "dense_vector_norms.md",
+            "Vector Normalization",
+            "Normalize L2 for inner-product search; ensure consistent preprocessing at index and query time.",
+        ),
+        (
+            "data_quality.md",
+            "Data Quality",
+            "Prefer authoritative, concise docs; remove duplicates; enforce consistent titles and doc_ids.",
+        ),
+        (
+            "index_update_strategies.md",
+            "Index Updates",
+            "Use periodic full rebuilds or append-only with periodic compaction; version artifacts for rollback.",
+        ),
+        (
+            "infra_costs.md",
+            "Infra Costs",
+            "Batch embedding jobs, use spot instances, and autoscale serving layers to control spend.",
+        ),
+        (
+            "security_controls.md",
+            "Security Controls",
+            "Manage secrets via vaults, restrict egress, and audit API usage; redact PII early.",
+        ),
+        (
+            "prompt_citations.md",
+            "Prompting with Citations",
+            "Ask for quotations and cite doc_ids. Enforce that each claim references retrieved evidence.",
+        ),
+        (
+            "bm25_vs_dense.md",
+            "BM25 vs Dense",
+            "BM25 excels at exact tokens and codes; dense handles paraphrase. Hybrid mitigates both weaknesses.",
+        ),
+        (
+            "colbert_gpu.md",
+            "ColBERT on GPU",
+            "Significant latency reductions; ensure CUDA versions match PyTorch and Transformers.",
+        ),
+        (
+            "faiss_ivf_training.md",
+            "IVF Training Data",
+            "Aim for ≥4×nlist training samples; otherwise prefer Flat or HNSW to avoid poor centroids.",
+        ),
+        (
+            "logging_observability.md",
+            "Observability",
+            "Log query latency breakdown (dense, sparse, fusion, reranker) and top-k overlaps.",
+        ),
     ]
     topics.extend((fn, title, f"""{body}\n""") for fn, title, body in variants)
 
@@ -286,5 +358,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

@@ -44,7 +44,7 @@ def build_faiss(index_dir, vecs, index_cfg):
         # Training requirements:
         # - IVF coarse quantizer: need significantly more samples than nlist (empirical 4x)
         # - PQ codebooks: need at least 2**nbits samples to train k-means per subvector
-        min_train_needed = max(int(nlist * 4), 2 ** nbits)
+        min_train_needed = max(int(nlist * 4), 2**nbits)
         if len(vecs) < min_train_needed:
             print(
                 f"Warning: only {len(vecs)} vectors available but IVFPQ (nlist={nlist}, m={m}, nbits={nbits}) "

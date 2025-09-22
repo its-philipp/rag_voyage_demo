@@ -94,9 +94,7 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
         if passages:
             cb_reranker = ColBERTReranker(model_name=colbert_model, device=device)
             scores = cb_reranker.score(query, passages)
-            scored = list(
-                zip(scores, [all_docs[doc_id] for (doc_id, _text) in docs_to_rerank])
-            )
+            scored = list(zip(scores, [all_docs[doc_id] for (doc_id, _text) in docs_to_rerank]))
             reranked_chunks: List[Tuple[float, Dict]] = sorted(
                 scored, key=lambda x: x[0], reverse=True
             )[:reranker_k]
@@ -112,9 +110,7 @@ def query_system(query: str, cfg: Dict[str, Any]) -> List[Tuple[float, Dict]]:
         if passages:
             ce_reranker = CrossEncoderReranker(cross_encoder_model)
             scores = ce_reranker.score(query, passages)
-            scored = list(
-                zip(scores, [all_docs[doc_id] for (doc_id, _text) in docs_to_rerank])
-            )
+            scored = list(zip(scores, [all_docs[doc_id] for (doc_id, _text) in docs_to_rerank]))
             reranked_chunks = sorted(scored, key=lambda x: x[0], reverse=True)[:reranker_k]
             final_chunks = reranked_chunks
         else:
