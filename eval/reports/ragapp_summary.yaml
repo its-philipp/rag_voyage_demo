@@ -1,34 +1,43 @@
 results:
 - question: Compare and contrast ColBERT with traditional cross-encoder and bi-encoder
     models, highlighting its unique mechanism.
-  answer: "ColBERT distinguishes itself from traditional cross-encoders and bi-encoders\
-    \ through its unique \"late interaction\" mechanism. \n\nBi-encoders represent\
-    \ queries and documents as single dense vectors, which allows for fast approximate\
-    \ nearest neighbor (ANN) search but sacrifices token-level nuance. In contrast,\
-    \ ColBERT encodes queries and documents into token-level embeddings and computes\
-    \ MaxSim between each query token and document token at search time, enhancing\
-    \ sensitivity to exact terms and phrasings. This results in improved recall and\
-    \ mean reciprocal rank (MRR) compared to bi-encoders while maintaining manageable\
-    \ latency.\n\nCross-encoders, on the other hand, jointly encode the query-document\
-    \ pair with full attention, allowing for deep interactions but at a high computational\
-    \ cost, making them impractical for exhaustive retrieval at scale. ColBERT's decoupled\
-    \ encoding and MaxSim late interaction provide a faster retrieval solution while\
-    \ still enabling fine-grained matching.\n\nIn summary, ColBERT combines the expressiveness\
-    \ of cross-encoders with the efficiency of bi-encoders, making it a balanced retrieval\
-    \ model that leverages late interaction for enhanced performance (ColBERT Overview)."
+  answer: 'ColBERT uniquely balances the expressiveness of cross-encoders with the
+    efficiency of bi-encoders through its "late interaction" mechanism. Unlike traditional
+    cross-encoders, which "jointly encode the [query, document] pair with full attention"
+    leading to high computational costs, ColBERT decouples the encoding process. It
+    computes MaxSim between query token embeddings and document token embeddings at
+    search time, allowing for "faster retrieval while retaining fine-grained matching."
+
+
+    In contrast, bi-encoders independently embed queries and documents into single-vector
+    representations, which can limit their expressiveness. ColBERT''s approach enables
+    it to achieve a more nuanced understanding of the relationship between queries
+    and documents without the exhaustive computational demands of cross-encoders (doc_id:
+    not provided).'
   metrics:
     groundedness: 1.0
-    context_relevance_avg: 0.8
+    context_relevance_avg: 0.4600000000000001
     answer_relevance: 1.0
   contexts:
-  - '# ColBERT vs Bi-Encoders
-
-
-    Bi-encoders represent queries and documents as single dense vectors, enabling
-    fast ANN search but losing token-level nuance. ColBERT uses multiple vectors per
-    text and late interaction, improving sensitivity to exact terms and phrasings.
-    This typically increases recall and MRR over bi-encoders on passage retrieval
-    benchmarks while keeping latency manageable.'
+  - ColBERTv2 is a retrieval model that balances the expressiveness of computationally
+    expensive models with the efficiency of less expressive but faster models. It
+    introduces a "late interaction" mechanism over BERT-based embeddings. Standard
+    dense retrieval models, often called bi-encoders, independently embed the query
+    and the document into single-vector representations.
+  - Retrieval-Augmented Generation (RAG) is a methodology for improving the performance
+    of Large Language Models (LLMs) on knowledge-intensive tasks. It combines a pre-trained
+    parametric memory (the LLM itself) with a non-parametric memory, which is typically
+    a dense vector index of a large corpus like Wikipedia. The core idea is to retrieve
+    relevant documents from the external knowledge source and provide them as context
+    to the LLM when generating an answer.
+  - 'Evaluating a Retrieval-Augmented Generation (RAG) application involves assessing
+    the quality of both the retrieval and generation components. A useful framework
+    for this is the RAG Triad, which focuses on three key metrics: Answer Relevance,
+    Context Relevance, and Groundedness. 1.'
+  - FAISS (Facebook AI Similarity Search) is a library for efficient similarity search
+    and clustering of dense vectors. It contains algorithms that search in sets of
+    vectors of any size, up to ones that possibly do not fit in RAM. The most basic
+    FAISS index is the `IndexFlatL2`.
   - '# ColBERT Overview
 
 
@@ -37,6 +46,17 @@ results:
     by introducing late interaction. Queries and documents are encoded into token-level
     embeddings. At search time, ColBERT computes MaxSim between each query token embedding
     and document token embeddings, then sums these maxima to produce a score.'
+  - Hybrid search is an approach that combines the strengths of traditional keyword-based
+    (sparse) search with modern semantic (dense) vector search. This combination provides
+    more relevant and accurate results than either method could achieve on its own.
+    Sparse retrieval, powered by algorithms like BM25, excels at finding documents
+    with exact keyword matches.
+  - Dense retrieval is a method used in information retrieval that represents documents
+    and queries as dense vectors, known as embeddings. Unlike sparse retrieval methods
+    like TF-IDF or BM25, which rely on keyword matching, dense retrieval captures
+    the semantic meaning of the text. The process begins with an embedding model,
+    often a pre-trained transformer like BERT or a specialized model like Voyage,
+    which maps text to a high-dimensional vector space.
   - '# ColBERT vs Cross-Encoders
 
 
@@ -45,11 +65,6 @@ results:
     but are infeasible for exhaustive retrieval at scale. ColBERT decouples encoding
     and uses a MaxSim late interaction at query time, yielding faster retrieval while
     retaining fine-grained matching.'
-  - ColBERTv2 is a retrieval model that balances the expressiveness of computationally
-    expensive models with the efficiency of less expressive but faster models. It
-    introduces a "late interaction" mechanism over BERT-based embeddings. Standard
-    dense retrieval models, often called bi-encoders, independently embed the query
-    and the document into single-vector representations.
   - '# Reranking Overview
 
 
@@ -62,85 +77,59 @@ results:
     ColBERT incurs per-query encoding and MaxSim computation. To reduce latency: cache
     frequent queries, cap reranker_k, and ensure efficient batching. On GPU, throughput
     improves substantially.'
-  - '# ColBERT on GPU
+  - '# Evaluation Methodology
 
 
-    Significant latency reductions; ensure CUDA versions match PyTorch and Transformers.'
-  - '# Context Windowing
+    Use realistic queries and track metrics over time. For RAG triad, keep prompts
+    stable. Compare retrieval-only metrics (recall@K, MRR) separately from end-to-end
+    metrics.'
+  - '# ColBERT vs Bi-Encoders
 
 
-    Rerankers benefit from clean passages. Keep chunks within model context limits;
-    for ColBERT, doc_maxlen ~180 is common. For generator LLMs, prune low-signal passages
-    and summarize when necessary to fit within context.'
-  - '# ColBERT Practical Tips
+    Bi-encoders represent queries and documents as single dense vectors, enabling
+    fast ANN search but losing token-level nuance. ColBERT uses multiple vectors per
+    text and late interaction, improving sensitivity to exact terms and phrasings.
+    This typically increases recall and MRR over bi-encoders on passage retrieval
+    benchmarks while keeping latency manageable.'
+  - '# Chunking Strategies
 
 
-    Batch queries, cap doc_maxlen, and cache frequent passages. Monitor MaxSim distributions
-    and layer norms for anomalies.'
-  - Hybrid search is an approach that combines the strengths of traditional keyword-based
-    (sparse) search with modern semantic (dense) vector search. This combination provides
-    more relevant and accurate results than either method could achieve on its own.
-    Sparse retrieval, powered by algorithms like BM25, excels at finding documents
-    with exact keyword matches.
-- question: How does the FAISS IVFPQ index work, and what are the trade-offs compared
-    to a Flat index?
-  answer: "The FAISS IVFPQ index combines an inverted file (IVF) with product quantization\
-    \ (PQ). IVF partitions the space into nlist clusters, and during queries, it probes\
-    \ nprobe nearest clusters. PQ compresses residual vectors into subvector codebooks.\
-    \ \n\nThe trade-offs compared to a Flat index include reduced latency and memory\
-    \ usage due to the approximations made by IVFPQ, but this may come at the cost\
-    \ of accuracy. Specifically, while Flat indexes perform exact searches and serve\
-    \ as accuracy baselines, IVFPQ's approximations can lead to lower recall and precision\
-    \ depending on the configuration of nlist and nprobe (e.g., \"Increase nprobe\
-    \ for higher recall at the cost of latency\")."
-  metrics:
-    groundedness: 1.0
-    context_relevance_avg: 0.5
-    answer_relevance: 1.0
-  contexts:
-  - '# FAISS Tuning
-
-
-    For IVFPQ, ensure sufficient training samples relative to nlist. Increase nprobe
-    for higher recall at the cost of latency. Consider Flat or HNSW for small corpora.'
+    Chunk granularity influences recall and precision. Smaller chunks improve precision
+    and reduce noise but may fragment context. Overlap preserves coherence.'
   - '# FAISS IVFPQ
 
 
     IVFPQ combines an inverted file (IVF) with product quantization (PQ). IVF partitions
     the space into nlist clusters; queries probe nprobe nearest clusters. PQ compresses
     residual vectors into subvector codebooks.'
-  - '# FAISS Metrics
+  - '# Azure vs AWS for RAG
 
 
-    Measure recall@K vs. Flat, QPS, and memory footprint. Validate on held-out queries
-    before changing nlist/nprobe.'
+    Both clouds offer managed vector stores, serverless, and GPUs. Choose based on
+    existing agreements and data residency. On Azure, combine Databricks with Azure
+    OpenAI/Voyage and Blob/Delta.'
+  - '# Embedding Models (Voyage)
+
+
+    Voyage models map text to dense vectors. Key considerations:
+
+    - Dimensionality: affects index size and compute. - Throughput/latency: batch
+    requests to improve efficiency.'
+  - '# ColBERT Practical Tips
+
+
+    Batch queries, cap doc_maxlen, and cache frequent passages. Monitor MaxSim distributions
+    and layer norms for anomalies.'
+  - '# ColBERT on GPU
+
+
+    Significant latency reductions; ensure CUDA versions match PyTorch and Transformers.'
   - '# FAISS Basics
 
 
     FAISS provides vector indexes for similarity search. IndexFlatL2 and IndexFlatIP
     perform exact search and serve as accuracy baselines. For large datasets, approximate
     indexes like IVF, HNSW, and PQ reduce latency and memory.'
-  - FAISS (Facebook AI Similarity Search) is a library for efficient similarity search
-    and clustering of dense vectors. It contains algorithms that search in sets of
-    vectors of any size, up to ones that possibly do not fit in RAM. The most basic
-    FAISS index is the `IndexFlatL2`.
-  - '# FAISS HNSW
-
-
-    HNSW builds a multi-layer navigable small-world graph. During search, the algorithm
-    traverses from an entry point, refining candidates through neighbors at each layer.
-    Parameters like efSearch and efConstruction control accuracy vs.'
-  - "# IVF Training Data\n\nAim for \u22654\xD7nlist training samples; otherwise prefer\
-    \ Flat or HNSW to avoid poor centroids."
-  - '# Index Size Considerations
-
-
-    Vector dimensionality and number of chunks drive memory. PQ reduces footprint
-    but may reduce accuracy. Track index size and latency alongside quality to find
-    acceptable trade-offs.'
-  - "# Reciprocal Rank Fusion\n\nRRF merges multiple ranked lists by summing 1/(k\
-    \ + rank). It is parameter-light and robust to noise. Typical k ranges 10\u2013\
-    60."
   - '# Hybrid Search
 
 
@@ -149,3 +138,135 @@ results:
     lists. Benefits:
 
     - Sparse captures exact terms and rare tokens.'
+- question: How does the FAISS IVFPQ index work, and what are the trade-offs compared
+    to a Flat index?
+  answer: The FAISS IVFPQ index combines an inverted file (IVF) with product quantization
+    (PQ). IVF partitions the space into clusters, allowing queries to probe only the
+    nearest clusters, while PQ compresses residual vectors into subvector codebooks.
+    This approach reduces memory usage and increases search speed compared to a Flat
+    index, which performs exact search and serves as an accuracy baseline. However,
+    the trade-off is that IVFPQ may sacrifice some accuracy for improved efficiency,
+    particularly in terms of latency and memory usage (doc_id not available).
+  metrics:
+    groundedness: 1.0
+    context_relevance_avg: 0.24000000000000005
+    answer_relevance: 1.0
+  contexts:
+  - FAISS (Facebook AI Similarity Search) is a library for efficient similarity search
+    and clustering of dense vectors. It contains algorithms that search in sets of
+    vectors of any size, up to ones that possibly do not fit in RAM. The most basic
+    FAISS index is the `IndexFlatL2`.
+  - 'Evaluating a Retrieval-Augmented Generation (RAG) application involves assessing
+    the quality of both the retrieval and generation components. A useful framework
+    for this is the RAG Triad, which focuses on three key metrics: Answer Relevance,
+    Context Relevance, and Groundedness. 1.'
+  - ColBERTv2 is a retrieval model that balances the expressiveness of computationally
+    expensive models with the efficiency of less expressive but faster models. It
+    introduces a "late interaction" mechanism over BERT-based embeddings. Standard
+    dense retrieval models, often called bi-encoders, independently embed the query
+    and the document into single-vector representations.
+  - Retrieval-Augmented Generation (RAG) is a methodology for improving the performance
+    of Large Language Models (LLMs) on knowledge-intensive tasks. It combines a pre-trained
+    parametric memory (the LLM itself) with a non-parametric memory, which is typically
+    a dense vector index of a large corpus like Wikipedia. The core idea is to retrieve
+    relevant documents from the external knowledge source and provide them as context
+    to the LLM when generating an answer.
+  - Hybrid search is an approach that combines the strengths of traditional keyword-based
+    (sparse) search with modern semantic (dense) vector search. This combination provides
+    more relevant and accurate results than either method could achieve on its own.
+    Sparse retrieval, powered by algorithms like BM25, excels at finding documents
+    with exact keyword matches.
+  - Dense retrieval is a method used in information retrieval that represents documents
+    and queries as dense vectors, known as embeddings. Unlike sparse retrieval methods
+    like TF-IDF or BM25, which rely on keyword matching, dense retrieval captures
+    the semantic meaning of the text. The process begins with an embedding model,
+    often a pre-trained transformer like BERT or a specialized model like Voyage,
+    which maps text to a high-dimensional vector space.
+  - '# FAISS IVFPQ
+
+
+    IVFPQ combines an inverted file (IVF) with product quantization (PQ). IVF partitions
+    the space into nlist clusters; queries probe nprobe nearest clusters. PQ compresses
+    residual vectors into subvector codebooks.'
+  - '# ColBERT Overview
+
+
+    ColBERT (Contextualized Late Interaction over BERT) is a retrieval model that
+    balances the expressiveness of cross-encoders with the efficiency of bi-encoders
+    by introducing late interaction. Queries and documents are encoded into token-level
+    embeddings. At search time, ColBERT computes MaxSim between each query token embedding
+    and document token embeddings, then sums these maxima to produce a score.'
+  - '# FAISS Tuning
+
+
+    For IVFPQ, ensure sufficient training samples relative to nlist. Increase nprobe
+    for higher recall at the cost of latency. Consider Flat or HNSW for small corpora.'
+  - '# FAISS Basics
+
+
+    FAISS provides vector indexes for similarity search. IndexFlatL2 and IndexFlatIP
+    perform exact search and serve as accuracy baselines. For large datasets, approximate
+    indexes like IVF, HNSW, and PQ reduce latency and memory.'
+  - '# FAISS HNSW
+
+
+    HNSW builds a multi-layer navigable small-world graph. During search, the algorithm
+    traverses from an entry point, refining candidates through neighbors at each layer.
+    Parameters like efSearch and efConstruction control accuracy vs.'
+  - '# ColBERT vs Cross-Encoders
+
+
+    Cross-encoders jointly encode the [query, document] pair with full attention,
+    enabling deep interactions but at high computational cost. They excel in reranking
+    but are infeasible for exhaustive retrieval at scale. ColBERT decouples encoding
+    and uses a MaxSim late interaction at query time, yielding faster retrieval while
+    retaining fine-grained matching.'
+  - '# Embedding Models (Voyage)
+
+
+    Voyage models map text to dense vectors. Key considerations:
+
+    - Dimensionality: affects index size and compute. - Throughput/latency: batch
+    requests to improve efficiency.'
+  - '# Evaluation Methodology
+
+
+    Use realistic queries and track metrics over time. For RAG triad, keep prompts
+    stable. Compare retrieval-only metrics (recall@K, MRR) separately from end-to-end
+    metrics.'
+  - '# Reranking Overview
+
+
+    Rerankers refine candidate lists from fast retrievers. Cross-encoders provide
+    strong pairwise scoring but are compute-heavy. ColBERT offers a middle ground
+    with token-level late interaction.'
+  - '# Azure vs AWS for RAG
+
+
+    Both clouds offer managed vector stores, serverless, and GPUs. Choose based on
+    existing agreements and data residency. On Azure, combine Databricks with Azure
+    OpenAI/Voyage and Blob/Delta.'
+  - '# Common Retrieval Failures
+
+
+    Failure modes include:
+
+    - Vocabulary mismatch: dense helps; add synonyms, augment data. - Ambiguity: query
+    decomposition or disambiguation prompts. - Over-chunking: too small windows fragment
+    context.'
+  - '# Chunking Strategies
+
+
+    Chunk granularity influences recall and precision. Smaller chunks improve precision
+    and reduce noise but may fragment context. Overlap preserves coherence.'
+  - '# Index Size Considerations
+
+
+    Vector dimensionality and number of chunks drive memory. PQ reduces footprint
+    but may reduce accuracy. Track index size and latency alongside quality to find
+    acceptable trade-offs.'
+  - '# FAISS Metrics
+
+
+    Measure recall@K vs. Flat, QPS, and memory footprint. Validate on held-out queries
+    before changing nlist/nprobe.'

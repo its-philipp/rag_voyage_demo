@@ -63,6 +63,15 @@ curl -s http://localhost:8000/health
 # search
 curl -s -X POST http://localhost:8000/search -H 'Content-Type: application/json' -d '{"query":"What is ColBERT?"}'
 ```
+
+Run with mounts (uses local code and indexes, and your .env):
+```bash
+docker run --rm -p 8000:8000 --env-file .env \
+  -v "$PWD:/app" \
+  -v "$PWD/index:/app/index" \
+  -v "$PWD/index_bm25:/app/index_bm25" \
+  rag-voyage-demo:latest
+```
 CI publishes images to GHCR as `ghcr.io/<owner>/rag-voyage-demo:latest` and `:<git-sha>`.
 
 ## Key Scripts

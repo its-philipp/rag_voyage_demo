@@ -22,7 +22,7 @@ setup:
 	.venv/bin/uv pip install -e '.[dev]'
 
 index:
-	.venv/bin/uv run python apps/cli/build_index.py
+	.venv/bin/uv run python -m apps.cli.build_index
 
 query:
 	.venv/bin/uv run python -m apps.cli.query "What is ColBERT?"
@@ -31,7 +31,7 @@ eval:
 	.venv/bin/uv run python -m eval.run_evaluation
 
 api:
-	.venv/bin/uv run python apps/api.py
+	.venv/bin/uv run python -m apps.api
 
 docker-build:
 	docker build -t rag-voyage-demo:latest .

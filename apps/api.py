@@ -1,8 +1,15 @@
 import os
 import logging
+import sys
+from pathlib import Path
 from flask import Flask, request, jsonify
 import yaml
 from dotenv import load_dotenv
+
+# Ensure project root on sys.path for imports inside containers
+_root = Path(__file__).resolve().parents[1]
+if str(_root) not in sys.path:
+    sys.path.insert(0, str(_root))
 
 
 def create_app(query_func=None) -> Flask:

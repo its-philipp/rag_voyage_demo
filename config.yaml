@@ -1,37 +1,26 @@
 # Copy to config.yaml and edit your VOYAGE_API_KEY.
 index_dir: ./index
+bm25_index_path: ./index_bm25
 data_path: ./data/sample_docs.jsonl
-device: cpu
 embedding:
   provider: voyage
-  model: voyage-2 #voyage-context-3        # change if you use a different model
-  dim: 1024                      # adjust to your voyage model's output dim
+  model: voyage-2        # supported model per API (previously voyage-context-3)
+  dim: 1024              # adjust to your voyage model's output dim
   batch_size: 16
   api_key_env: VOYAGE_API_KEY
 faiss:
-  type: ivf_pq                   # [hnsw, flat, ivf_pq]
-  nlist: 16                      # coarse centroids (fit small corpora; raise as corpus grows)
-  m: 32                          # PQ subvectors
-  nprobe: 16                     # query-time probes
-  nbits: 6                       # PQ codebook bits (reduce for low-sample training)
+  type: ivf_pq           # [hnsw, flat, ivf_pq]
+  nlist: 4096            # coarse centroids
+  m: 32                  # PQ subvectors
+  nprobe: 16             # query-time probes
 retrieval:
-  top_m: 200                     # candidates to send to reranker
-  top_k: 20                      # final chunks returned to generator
+  top_m: 200             # candidates to send to reranker
+  top_k: 20              # final chunks returned to generator
 reranker:
-  enabled: true
-  type: colbert
-  colbert_model: "colbert-ir/colbertv2.0"
-  reranker_k: 10
-  device: null # auto-detect
+  type: colbert          # [colbert, crossencoder]
+  colbert_model: colbert-ir/colbertv2.0
+  max_query_len: 64
+  max_doc_len: 180
 generator:
   max_context_tokens: 3000
   # (left for your LLM of choice)
-
-# Root directory for the dense FAISS index and metadata.
-index_path: "./index"
-# Directory for the sparse BM25 index.
-bm25_index_path: "./index_bm25"
-
-# --- Retrieval/Reranking Parameters ---
-
-# Number of candidates to retrieve from ANN index (dense) and BM25 (sparse).
