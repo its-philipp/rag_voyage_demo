@@ -34,6 +34,18 @@ locals {
   repo_path   = databricks_repo.repo.path
 }
 
+# Optional: Secret scope for API keys
+resource "databricks_secret_scope" "app" {
+  name = "rag-voyage-demo"
+}
+
+resource "databricks_secret" "voyage" {
+  count         = var.voyage_api_key == null ? 0 : 1
+  scope         = databricks_secret_scope.app.name
+  key           = "VOYAGE_API_KEY"
+  string_value  = var.voyage_api_key
+}
+
 # Job: Build FAISS index (runs apps/cli/build_index.py)
 resource "databricks_job" "index_job" {
   name = "rag-voyage-demo - Build FAISS Index"
@@ -59,6 +71,12 @@ resource "databricks_job" "index_job" {
       python_file   = "${local.repo_path}/apps/cli/build_index.py"
       parameters    = []
     }
+    environment_key = "env"
+    environment {
+      variables = {
+        VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
+      }
+    }
   }
 }
 
@@ -81,6 +99,12 @@ resource "databricks_job" "bm25_job" {
     spark_python_task {
       python_file   = "${local.repo_path}/scripts/build_bm25_index.py"
       parameters    = []
+    }
+    environment_key = "env"
+    environment {
+      variables = {
+        VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
+      }
     }
   }
 }

@@ -37,3 +37,10 @@ variable "warehouse_id" {
   type        = string
   default     = null
 }
+
+variable "voyage_api_key" {
+  description = "Voyage API key to store in Databricks Secrets"
+  type        = string
+  sensitive   = true
+  default     = null
+}

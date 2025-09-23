@@ -1,6 +1,6 @@
-# RAG Voyage Demo: Hybrid Search with Contextual Embeddings + Agentic RAG
+# RAG Voyage Demo
 
-A comprehensive RAG (Retrieval-Augmented Generation) system featuring hybrid search, multiple reranking strategies, and agentic capabilities.
+Hybrid search (dense + sparse) with reranking and agentic RAG. Packaged with CLI, API, Docker, and Databricks/Terraform infra.
 
 ## Features
 
@@ -9,6 +9,13 @@ A comprehensive RAG (Retrieval-Augmented Generation) system featuring hybrid sea
 - **Sparse Retrieval**: BM25 with rank-bm25
 - **Reciprocal Rank Fusion**: Combines dense and sparse results
 - **Advanced Reranking**: ColBERT (late interaction) with CrossEncoder fallback
+
+### 🧱 Tech Stack
+- Python, uv (packaging), FAISS, rank-bm25
+- Voyage AI embeddings
+- Transformers / sentence-transformers
+- Flask API, Docker
+- Terraform + Databricks (repo + jobs)
 
 ### 🤖 **Agentic RAG**
 - Multi-step reasoning with query decomposition
@@ -141,13 +148,13 @@ make type
 
 ## Project layout
 ```
-├── src/                     # Core code
+├── src/                     # Core code (pipeline, index build, rerankers)
+├── apps/                    # API & CLI entrypoints
 ├── scripts/                 # Utilities & ingestion
 ├── eval/                    # Evaluation & reports
 ├── data/                    # Sample docs & corpus/
 ├── index/, index_bm25/      # Built indexes
-├── apps/api.py              # Flask API
-├── apps/cli/                # CLI wrappers for scripts
+├── infra/terraform/         # Databricks Terraform
 ├── Dockerfile               # Container build
 ├── .github/workflows/ci.yml # CI: lint/type/test + GHCR
 ├── config.yaml              # Runtime config
@@ -192,3 +199,8 @@ What it creates:
 - Two Jobs:
   - Build FAISS index (runs apps/cli/build_index.py)
   - Build BM25 index (runs scripts/build_bm25_index.py)
+
+Secrets:
+- Option A: Pass `-var voyage_api_key=...` in `make tf-plan` / `make tf-apply` to store `VOYAGE_API_KEY` in a Databricks secret scope `rag-voyage-demo`.
+- Option B: Create the secret manually via UI/CLI and set the same key.
+Jobs read the key from the secret scope when running.
