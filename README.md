@@ -163,3 +163,32 @@ make type
 .venv/bin/uv run pre-commit install
 .venv/bin/uv run pre-commit run --all-files
 ```
+
+## Databricks + Terraform
+
+Provision Databricks resources to run indexing jobs in your workspace.
+
+Prereqs:
+- Terraform >= 1.5
+- Databricks workspace host and PAT token
+
+Environment:
+```bash
+export DATABRICKS_HOST="https://adb-<id>.<cloud>.databricks.net"
+export DATABRICKS_TOKEN="<pat-token>"
+```
+
+Commands:
+```bash
+make tf-init   # terraform init in infra/terraform
+make tf-plan   # shows planned changes
+make tf-apply  # creates Databricks repo and jobs
+# later
+make tf-destroy
+```
+
+What it creates:
+- Databricks Repo cloned from your git remote/branch
+- Two Jobs:
+  - Build FAISS index (runs apps/cli/build_index.py)
+  - Build BM25 index (runs scripts/build_bm25_index.py)
