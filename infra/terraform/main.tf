@@ -56,26 +56,75 @@ resource "databricks_job" "index_job" {
       node_type_id  = local.node_type
       spark_version = local.spark_ver
       num_workers   = 1
+      spark_env_vars = {
+        VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
+      }
+      # init_scripts removed: DBFS init scripts EOL. We'll rely on ML runtime and libraries.
+    }
+  }
+
+  library {
+    pypi {
+      package = "faiss-cpu==1.8.0"
+    }
+  }
+  library {
+    pypi {
+      package = "voyageai>=0.2.1"
+    }
+  }
+  library {
+    pypi {
+      package = "rank-bm25>=0.2.2"
+    }
+  }
+  library {
+    pypi {
+      package = "transformers==4.36.0"
+    }
+  }
+  library {
+    pypi {
+      package = "sentence-transformers>=2.2.2"
+    }
+  }
+  library {
+    pypi {
+      package = "torch==2.2.2"
+    }
+  }
+  library {
+    pypi {
+      package = "tqdm>=4.66.2"
+    }
+  }
+  library {
+    pypi {
+      package = "python-dotenv>=1.0.1"
+    }
+  }
+  library {
+    pypi {
+      package = "pyyaml>=6.0.1"
+    }
+  }
+  library {
+    pypi {
+      package = "colbert-ai>=0.2.19"
+    }
+  }
+  library {
+    pypi {
+      package = "flask>=3.0.0"
     }
   }
 
   task {
     task_key        = "build_index"
     job_cluster_key = "jc"
-    python_wheel_task {
-      package_name = "rag-voyage-demo"
-      entry_point  = "none" # not using entry points; we'll use python task below
-    }
-    # For simplicity, run python directly
     spark_python_task {
       python_file   = "${local.repo_path}/apps/cli/build_index.py"
       parameters    = []
-    }
-    environment_key = "env"
-    environment {
-      variables = {
-        VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
-      }
     }
   }
 }
@@ -90,6 +139,66 @@ resource "databricks_job" "bm25_job" {
       node_type_id  = local.node_type
       spark_version = local.spark_ver
       num_workers   = 1
+      spark_env_vars = {
+        VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
+      }
+      # init_scripts removed: DBFS init scripts EOL. We'll rely on ML runtime and libraries.
+    }
+  }
+
+  library {
+    pypi {
+      package = "faiss-cpu==1.8.0"
+    }
+  }
+  library {
+    pypi {
+      package = "voyageai>=0.2.1"
+    }
+  }
+  library {
+    pypi {
+      package = "rank-bm25>=0.2.2"
+    }
+  }
+  library {
+    pypi {
+      package = "transformers==4.36.0"
+    }
+  }
+  library {
+    pypi {
+      package = "sentence-transformers>=2.2.2"
+    }
+  }
+  library {
+    pypi {
+      package = "torch==2.2.2"
+    }
+  }
+  library {
+    pypi {
+      package = "tqdm>=4.66.2"
+    }
+  }
+  library {
+    pypi {
+      package = "python-dotenv>=1.0.1"
+    }
+  }
+  library {
+    pypi {
+      package = "pyyaml>=6.0.1"
+    }
+  }
+  library {
+    pypi {
+      package = "colbert-ai>=0.2.19"
+    }
+  }
+  library {
+    pypi {
+      package = "flask>=3.0.0"
     }
   }
 
@@ -99,12 +208,6 @@ resource "databricks_job" "bm25_job" {
     spark_python_task {
       python_file   = "${local.repo_path}/scripts/build_bm25_index.py"
       parameters    = []
-    }
-    environment_key = "env"
-    environment {
-      variables = {
-        VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
-      }
     }
   }
 }
