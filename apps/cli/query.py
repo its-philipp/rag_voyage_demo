@@ -1,6 +1,15 @@
 import argparse
-import yaml
-from src.pipeline import query_system
+from pathlib import Path
+
+from src.pipeline import query_system  # noqa: E402
+
+import sys  # noqa: E402
+import yaml  # noqa: E402
+
+# Ensure project root on sys.path for Databricks jobs  # noqa: E402
+root = Path(__file__).resolve().parents[2]  # noqa: E402
+if str(root) not in sys.path:  # noqa: E402
+    sys.path.insert(0, str(root))  # noqa: E402
 
 
 def main():
