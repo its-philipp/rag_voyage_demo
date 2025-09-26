@@ -59,69 +59,70 @@ resource "databricks_job" "index_job" {
       spark_env_vars = {
         VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
       }
-      # init_scripts removed: DBFS init scripts EOL. We'll rely on ML runtime and libraries.
-    }
-  }
-
-  library {
-    pypi {
-      package = "faiss-cpu==1.8.0"
-    }
-  }
-  library {
-    pypi {
-      package = "voyageai>=0.2.1"
-    }
-  }
-  library {
-    pypi {
-      package = "rank-bm25>=0.2.2"
-    }
-  }
-  library {
-    pypi {
-      package = "transformers==4.36.0"
-    }
-  }
-  library {
-    pypi {
-      package = "sentence-transformers>=2.2.2"
-    }
-  }
-  library {
-    pypi {
-      package = "torch==2.2.2"
-    }
-  }
-  library {
-    pypi {
-      package = "tqdm>=4.66.2"
-    }
-  }
-  library {
-    pypi {
-      package = "python-dotenv>=1.0.1"
-    }
-  }
-  library {
-    pypi {
-      package = "pyyaml>=6.0.1"
-    }
-  }
-  library {
-    pypi {
-      package = "colbert-ai>=0.2.19"
-    }
-  }
-  library {
-    pypi {
-      package = "flask>=3.0.0"
+      # init_scripts removed: DBFS init scripts EOL. We'll rely on ML runtime and library.
     }
   }
 
   task {
     task_key        = "build_index"
     job_cluster_key = "jc"
+
+    library {
+      pypi {
+        package = "faiss-cpu==1.8.0"
+      }
+    }
+    library {
+      pypi {
+        package = "voyageai>=0.2.1"
+      }
+    }
+    library {
+      pypi {
+        package = "rank-bm25>=0.2.2"
+      }
+    }
+    library {
+      pypi {
+        package = "transformers==4.36.0"
+      }
+    }
+    library {
+      pypi {
+        package = "sentence-transformers>=2.2.2"
+      }
+    }
+    library {
+      pypi {
+        package = "torch==2.2.2"
+      }
+    }
+    library {
+      pypi {
+        package = "tqdm>=4.66.2"
+      }
+    }
+    library {
+      pypi {
+        package = "python-dotenv>=1.0.1"
+      }
+    }
+    library {
+      pypi {
+        package = "pyyaml>=6.0.1"
+      }
+    }
+    library {
+      pypi {
+        package = "colbert-ai>=0.2.19"
+      }
+    }
+    library {
+      pypi {
+        package = "flask>=3.0.0"
+      }
+    }
+
     spark_python_task {
       python_file   = "${local.repo_path}/apps/cli/build_index.py"
       parameters    = []
@@ -142,69 +143,70 @@ resource "databricks_job" "bm25_job" {
       spark_env_vars = {
         VOYAGE_API_KEY = "{{secrets/${databricks_secret_scope.app.name}/VOYAGE_API_KEY}}"
       }
-      # init_scripts removed: DBFS init scripts EOL. We'll rely on ML runtime and libraries.
-    }
-  }
-
-  library {
-    pypi {
-      package = "faiss-cpu==1.8.0"
-    }
-  }
-  library {
-    pypi {
-      package = "voyageai>=0.2.1"
-    }
-  }
-  library {
-    pypi {
-      package = "rank-bm25>=0.2.2"
-    }
-  }
-  library {
-    pypi {
-      package = "transformers==4.36.0"
-    }
-  }
-  library {
-    pypi {
-      package = "sentence-transformers>=2.2.2"
-    }
-  }
-  library {
-    pypi {
-      package = "torch==2.2.2"
-    }
-  }
-  library {
-    pypi {
-      package = "tqdm>=4.66.2"
-    }
-  }
-  library {
-    pypi {
-      package = "python-dotenv>=1.0.1"
-    }
-  }
-  library {
-    pypi {
-      package = "pyyaml>=6.0.1"
-    }
-  }
-  library {
-    pypi {
-      package = "colbert-ai>=0.2.19"
-    }
-  }
-  library {
-    pypi {
-      package = "flask>=3.0.0"
+      # init_scripts removed: DBFS init scripts EOL. We'll rely on ML runtime and library.
     }
   }
 
   task {
     task_key        = "build_bm25"
     job_cluster_key = "jc"
+
+    library {
+      pypi {
+        package = "faiss-cpu==1.8.0"
+      }
+    }
+    library {
+      pypi {
+        package = "voyageai>=0.2.1"
+      }
+    }
+    library {
+      pypi {
+        package = "rank-bm25>=0.2.2"
+      }
+    }
+    library {
+      pypi {
+        package = "transformers==4.36.0"
+      }
+    }
+    library {
+      pypi {
+        package = "sentence-transformers>=2.2.2"
+      }
+    }
+    library {
+      pypi {
+        package = "torch==2.2.2"
+      }
+    }
+    library {
+      pypi {
+        package = "tqdm>=4.66.2"
+      }
+    }
+    library {
+      pypi {
+        package = "python-dotenv>=1.0.1"
+      }
+    }
+    library {
+      pypi {
+        package = "pyyaml>=6.0.1"
+      }
+    }
+    library {
+      pypi {
+        package = "colbert-ai>=0.2.19"
+      }
+    }
+    library {
+      pypi {
+        package = "flask>=3.0.0"
+      }
+    }
+
     spark_python_task {
       python_file   = "${local.repo_path}/scripts/build_bm25_index.py"
       parameters    = []

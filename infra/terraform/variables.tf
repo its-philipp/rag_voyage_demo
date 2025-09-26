@@ -29,7 +29,7 @@ variable "job_cluster_node_type_id" {
 variable "job_cluster_spark_version" {
   description = "Override spark version for job clusters"
   type        = string
-  default     = null
+  default     = "13.3.x-cpu-ml-scala2.12"
 }
 
 variable "warehouse_id" {
