@@ -32,6 +32,19 @@ def _detect_project_root() -> Path:
                 break
             p = p.parent
 
+    # Databricks workspace heuristic: search under /Workspace/Users for repo root
+    ws_root = Path("/Workspace/Users")
+    if ws_root.exists():
+        # Search only two levels deep: /Workspace/Users/<user>/<repo>
+        for user_dir in ws_root.iterdir():
+            if not user_dir.is_dir():
+                continue
+            for repo_dir in user_dir.iterdir():
+                if not repo_dir.is_dir():
+                    continue
+                if (repo_dir / "pyproject.toml").exists() and (repo_dir / "scripts").exists():
+                    return repo_dir
+
     # Fallback: assume parent of base is the repository
     return candidates[0].parent if candidates else Path.cwd()
 
@@ -39,7 +52,36 @@ def _detect_project_root() -> Path:
 def main():
     """Builds and saves a BM25 index from the project's documents."""
     project_root = _detect_project_root()
-    cfg = yaml.safe_load(open(project_root / "config.yaml", "r"))
+    cfg_path = project_root / "config.yaml"
+    if not cfg_path.exists():
+        # Additional fallback: try CWD
+        alt_cfg = Path.cwd() / "config.yaml"
+        if alt_cfg.exists():
+            cfg_path = alt_cfg
+        else:
+            # Try workspace search one more time
+            ws_root = Path("/Workspace/Users")
+            found_cfg = None
+            if ws_root.exists():
+                for user_dir in ws_root.iterdir():
+                    if not user_dir.is_dir():
+                        continue
+                    for repo_dir in user_dir.iterdir():
+                        candidate = repo_dir / "config.yaml"
+                        if candidate.exists():
+                            found_cfg = candidate
+                            break
+                    if found_cfg:
+                        break
+            if found_cfg:
+                cfg_path = found_cfg
+            else:
+                raise FileNotFoundError(
+                    f"config.yaml not found near {project_root} or {Path.cwd()}"
+                )
+
+    print(f"Using config: {cfg_path}")
+    cfg = yaml.safe_load(open(cfg_path, "r"))
     # Read from config if relative path; otherwise use absolute
     data_path = Path(cfg.get("data_path", project_root / "data" / "sample_docs.jsonl"))
     if not data_path.is_absolute():
