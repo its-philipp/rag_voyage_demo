@@ -5,9 +5,40 @@ import yaml
 from rank_bm25 import BM25Okapi
 
 
+def _detect_project_root() -> Path:
+    """Detect project root robustly for Databricks/ipykernel contexts.
+
+    Tries multiple bases (path of current file, CWD) and walks up looking for
+    markers like pyproject.toml, .git, or the presence of both src/ and apps/.
+    """
+    candidates = []
+    try:
+        candidates.append(Path(__file__).resolve())
+    except NameError:
+        # __file__ may be undefined in some Databricks execution paths
+        pass
+    candidates.append(Path.cwd())
+
+    for base in candidates:
+        p = base
+        for _ in range(6):
+            if (
+                (p / "pyproject.toml").exists()
+                or (p / ".git").exists()
+                or ((p / "src").exists() and (p / "apps").exists())
+            ):
+                return p
+            if p.parent == p:
+                break
+            p = p.parent
+
+    # Fallback: assume parent of base is the repository
+    return candidates[0].parent if candidates else Path.cwd()
+
+
 def main():
     """Builds and saves a BM25 index from the project's documents."""
-    project_root = Path(__file__).resolve().parents[1]
+    project_root = _detect_project_root()
     cfg = yaml.safe_load(open(project_root / "config.yaml", "r"))
     # Read from config if relative path; otherwise use absolute
     data_path = Path(cfg.get("data_path", project_root / "data" / "sample_docs.jsonl"))
