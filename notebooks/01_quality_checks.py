@@ -2,6 +2,22 @@
 # COMMAND ----------
 # MAGIC %pip install -q pyyaml rank-bm25 faiss-cpu==1.8.0 voyageai
 # COMMAND ----------
+"""
+Load VOYAGE_API_KEY from Databricks secret scope if not present.
+"""
+import os
+
+if not os.getenv("VOYAGE_API_KEY"):
+    try:
+        dbu = globals().get("dbutils")
+        if dbu is not None:
+            os.environ["VOYAGE_API_KEY"] = dbu.secrets.get(
+                scope="rag-voyage-demo", key="VOYAGE_API_KEY"
+            )
+            print("VOYAGE_API_KEY set from secret scope.")
+    except Exception as e:  # noqa: BLE001
+        print("Warning: Could not load VOYAGE_API_KEY from secret scope:", e)
+# COMMAND ----------
 # COMMAND ----------
 """
 Quality Checks notebook
@@ -9,10 +25,10 @@ Quality Checks notebook
 Verifies built indexes and runs a couple of sample retrievals (BM25 + FAISS).
 """
 
-from pathlib import Path
-import sys
-import json
-import yaml
+from pathlib import Path  # noqa: E402
+import sys  # noqa: E402
+import json  # noqa: E402
+import yaml  # noqa: E402
 
 
 def _ensure_project_root_on_path() -> Path:
