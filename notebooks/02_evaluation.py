@@ -1,6 +1,6 @@
 # Databricks notebook source
 # COMMAND ----------
-# MAGIC %pip install -q pyyaml voyageai
+# MAGIC %pip install -q pyyaml voyageai openai>=1.0.0
 # COMMAND ----------
 """
 Load VOYAGE_API_KEY from Databricks secret scope if not present.
@@ -17,6 +17,17 @@ if not os.getenv("VOYAGE_API_KEY"):
             print("VOYAGE_API_KEY set from secret scope.")
     except Exception as e:  # noqa: BLE001
         print("Warning: Could not load VOYAGE_API_KEY from secret scope:", e)
+# Also try to load OpenAI key if missing
+if not os.getenv("OPENAI_API_KEY"):
+    try:
+        dbu = globals().get("dbutils")
+        if dbu is not None:
+            os.environ["OPENAI_API_KEY"] = dbu.secrets.get(
+                scope="rag-voyage-demo", key="OPENAI_API_KEY"
+            )
+            print("OPENAI_API_KEY set from secret scope.")
+    except Exception as e:  # noqa: BLE001
+        print("Warning: Could not load OPENAI_API_KEY from secret scope:", e)
 # COMMAND ----------
 # COMMAND ----------
 """
