@@ -15,7 +15,7 @@ Hybrid search (dense + sparse) with reranking and agentic RAG. Packaged with CLI
 - Voyage AI embeddings
 - Transformers / sentence-transformers
 - Flask API, Docker
-- Terraform + Databricks (repo + jobs)
+- Terraform + Databricks (repo + jobs + workflow)
 
 ### 🤖 **Agentic RAG**
 - Multi-step reasoning with query decomposition
@@ -196,11 +196,38 @@ make tf-destroy
 
 What it creates:
 - Databricks Repo cloned from your git remote/branch
-- Two Jobs:
+- Two Jobs (standalone) and one Workflow:
   - Build FAISS index (runs apps/cli/build_index.py)
   - Build BM25 index (runs scripts/build_bm25_index.py)
+  - Workflow: sequentially runs FAISS → BM25 on the same cluster
 
 Secrets:
 - Option A: Pass `-var voyage_api_key=...` in `make tf-plan` / `make tf-apply` to store `VOYAGE_API_KEY` in a Databricks secret scope `rag-voyage-demo`.
 - Option B: Create the secret manually via UI/CLI and set the same key.
 Jobs read the key from the secret scope when running.
+
+## Databricks Notebooks
+
+Starter notebooks are versioned in `notebooks/` and can be imported into your Databricks Repo:
+
+- `01_quality_checks.py`
+  - Installs deps with `%pip`
+  - Restarts Python for the session
+  - Locates project root in workspace
+  - Verifies FAISS (`index/`) and BM25 (`index_bm25/`) artifacts
+  - Runs sample BM25 and FAISS queries
+  - Tip: If BM25 artifacts are missing, run:
+    ```python
+    from scripts.build_bm25_index import main as build_bm25
+    build_bm25()
+    ```
+
+- `02_evaluation.py`
+  - Installs deps with `%pip` (pyyaml, voyageai, openai, typing_extensions, python-dotenv)
+  - Restarts Python for the session
+  - Loads `VOYAGE_API_KEY` / `OPENAI_API_KEY` from secret scope `rag-voyage-demo` when present
+  - Demonstrates calling `eval.feedback` metrics (groundedness, relevance)
+
+Notebook compute:
+- Attach an all-purpose cluster (recommended: 13.3 LTS ML CPU). Job clusters are ephemeral and won’t appear for notebooks.
+- After `%pip` installs, click the blue “Restart Python” prompt or run `dbutils.library.restartPython()`.

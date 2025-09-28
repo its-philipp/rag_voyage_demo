@@ -1,11 +1,19 @@
 # Databricks notebook source
 # COMMAND ----------
-# MAGIC %pip install -q pyyaml voyageai openai>=1.0.0
+# MAGIC %pip install -q pyyaml voyageai openai>=1.0.0 typing_extensions>=4.7 python-dotenv
+# COMMAND ----------
+# Restart Python so newly installed libraries are used in this session
+try:
+    dbu = globals().get("dbutils")
+    if dbu is not None:
+        dbu.library.restartPython()
+except Exception as e:  # noqa: BLE001
+    print("If restart is unavailable, use the blue 'Restart Python' banner or rerun this cell:", e)
 # COMMAND ----------
 """
 Load VOYAGE_API_KEY from Databricks secret scope if not present.
 """
-import os
+import os  # noqa: E402
 
 if not os.getenv("VOYAGE_API_KEY"):
     try:

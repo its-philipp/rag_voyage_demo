@@ -2,10 +2,18 @@
 # COMMAND ----------
 # MAGIC %pip install -q pyyaml rank-bm25 faiss-cpu==1.8.0 voyageai
 # COMMAND ----------
+# Restart Python so newly installed libraries are used in this session
+try:
+    dbu = globals().get("dbutils")
+    if dbu is not None:
+        dbu.library.restartPython()
+except Exception as e:  # noqa: BLE001
+    print("If restart is unavailable, use the blue 'Restart Python' banner or rerun this cell:", e)
+# COMMAND ----------
 """
 Load VOYAGE_API_KEY from Databricks secret scope if not present.
 """
-import os
+import os  # noqa: E402
 
 if not os.getenv("VOYAGE_API_KEY"):
     try:
@@ -95,6 +103,11 @@ print("FAISS index dir:", index_dir)
 print("BM25 index dir:", bm25_dir)
 print("FAISS files:", list(index_dir.glob("*")))
 print("BM25 files:", list(bm25_dir.glob("*")))
+
+# COMMAND ----------
+from scripts.build_bm25_index import main as build_bm25  # noqa: E402
+
+build_bm25()
 
 # COMMAND ----------
 # BM25 sample query using SparseRetriever  # noqa: E402
