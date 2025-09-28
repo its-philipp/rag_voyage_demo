@@ -1,5 +1,8 @@
 # Databricks notebook source
 # COMMAND ----------
+# MAGIC %pip install -q pyyaml voyageai
+# COMMAND ----------
+# COMMAND ----------
 """
 Evaluation notebook
 

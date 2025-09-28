@@ -1,5 +1,8 @@
 # Databricks notebook source
 # COMMAND ----------
+# MAGIC %pip install -q pyyaml rank-bm25 faiss-cpu==1.8.0 voyageai
+# COMMAND ----------
+# COMMAND ----------
 """
 Quality Checks notebook
 
