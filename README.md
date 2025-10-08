@@ -49,7 +49,10 @@ This project follows a **separation of concerns** between batch processing and r
 │  INDEXES (Shared Storage)                           │
 │  • index/voyage.faiss                               │
 │  • index_bm25/bm25_index.pkl                        │
-│  • Can be local disk, DBFS, or Azure Blob          │
+│  • Storage options:                                 │
+│    - Local disk (development)                       │
+│    - Databricks Workspace (default for jobs)       │
+│    - Azure Blob Storage (production recommended)   │
 └─────────────────────────────────────────────────────┘
                     ↑ (reads)
 ┌─────────────────────────────────────────────────────┐
@@ -350,6 +353,132 @@ make tf-destroy
 - **Option B**: Create the secret manually via UI/CLI and set the same key.
 
 Jobs read the key from the secret scope when running.
+
+### Index Storage in Databricks
+
+**Current Default Behavior:**
+When Databricks jobs run, indexes are stored in the **Workspace Repos filesystem**:
+```
+/Workspace/Users/{your-email}/rag_voyage_demo.git/
+├── index/            (FAISS indexes)
+└── index_bm25/       (BM25 indexes)
+```
+
+**Storage Location Explained:**
+
+| Storage Type | Location | Accessibility | Use Case |
+|--------------|----------|---------------|----------|
+| **Workspace Repos** (current) | `/Workspace/Users/.../repo.git/` | Only within Databricks | ✅ Quick start, testing |
+| **DBFS Root** | `/dbfs/FileStore/...` | Within Databricks | Temporary/intermediate data |
+| **Azure Blob (mounted)** | `/dbfs/mnt/rag-indexes/` | ✅ Shared across services | ✅ **Production recommended** |
+
+**⚠️  Important:** Workspace Repos storage is **not accessible** to Flask API running outside Databricks. For production deployments where a separate API server needs to load the indexes, use Azure Blob Storage (see below).
+
+## Production Storage: Azure Blob Configuration
+
+For production deployments where Databricks builds indexes and a separate API (VM/AKS/Container) serves them, use **Azure Blob Storage** as shared storage.
+
+### Architecture with Azure Blob
+
+```
+┌─────────────────────────────────────────────┐
+│ Databricks Jobs                             │
+│ • Builds indexes                            │
+│ • Writes to: /dbfs/mnt/rag-indexes/         │
+└─────────────────────────────────────────────┘
+              ↓ (mounts)
+┌─────────────────────────────────────────────┐
+│ Azure Blob Storage Container                │
+│ Container: "rag-indexes"                    │
+│ ├── index/voyage.faiss                      │
+│ ├── index/meta.jsonl                        │
+│ └── index_bm25/bm25_index.pkl               │
+└─────────────────────────────────────────────┘
+              ↑ (mounts or uses SDK)
+┌─────────────────────────────────────────────┐
+│ Flask API (Azure VM/AKS/Container)          │
+│ • Reads indexes at startup                  │
+│ • Serves /search endpoint                   │
+└─────────────────────────────────────────────┘
+```
+
+### Setup Steps
+
+**1. Create Azure Blob Container:**
+```bash
+# Create storage account (if needed)
+az storage account create \
+  --name ragindexstorage \
+  --resource-group <your-rg> \
+  --location eastus \
+  --sku Standard_LRS
+
+# Create container for indexes
+az storage container create \
+  --name rag-indexes \
+  --account-name ragindexstorage
+```
+
+**2. Mount in Databricks:**
+```python
+# Run this in a Databricks notebook or job init
+dbutils.fs.mount(
+  source = "wasbs://rag-indexes@ragindexstorage.blob.core.windows.net",
+  mount_point = "/mnt/rag-indexes",
+  extra_configs = {
+    "fs.azure.account.key.ragindexstorage.blob.core.windows.net":
+      dbutils.secrets.get(scope="rag-voyage-demo", key="AZURE_STORAGE_KEY")
+  }
+)
+
+# Verify mount
+dbutils.fs.ls("/mnt/rag-indexes")
+```
+
+**3. Update config.yaml for Databricks:**
+```yaml
+# When running in Databricks with mounted storage
+index_dir: /dbfs/mnt/rag-indexes/index
+bm25_index_path: /dbfs/mnt/rag-indexes/index_bm25
+```
+
+**4. Configure Flask API to Read from Blob:**
+
+Option A - Mount Blob in VM (using blobfuse):
+```bash
+# Install blobfuse on your VM/container
+apt-get install blobfuse
+
+# Mount the container
+blobfuse /mnt/rag-indexes --tmp-path=/mnt/blobfusetmp \
+  --config-file=/path/to/fuse_connection.cfg
+
+# Flask API reads from /mnt/rag-indexes/index/
+```
+
+Option B - Use Azure SDK (download at startup):
+```python
+from azure.storage.blob import BlobServiceClient
+
+# In your Flask app startup
+blob_service = BlobServiceClient.from_connection_string(conn_str)
+container_client = blob_service.get_container_client("rag-indexes")
+
+# Download indexes to local disk
+os.makedirs("./index", exist_ok=True)
+for blob in container_client.list_blobs(name_starts_with="index/"):
+    with open(f"./{blob.name}", "wb") as f:
+        f.write(container_client.download_blob(blob.name).readall())
+```
+
+### Configuration Summary
+
+| Environment | Index Path Config | Storage Backend |
+|-------------|------------------|-----------------|
+| **Local Development** | `./index`, `./index_bm25` | Local filesystem |
+| **Databricks (default)** | `./index`, `./index_bm25` | Workspace Repos |
+| **Databricks (production)** | `/dbfs/mnt/rag-indexes/index` | Azure Blob (mounted) |
+| **Flask API (with Blob)** | `/mnt/rag-indexes/index` or local copy | Azure Blob (mounted/downloaded) |
 
 ## Databricks Notebooks
 
