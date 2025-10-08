@@ -32,6 +32,67 @@ Search results go through a multi-stage scoring process:
 3. **Reranking**: ColBERT or CrossEncoder models compute final relevance scores
 4. **Final Response**: Top-K documents with reranker scores returned to user
 
+## Architecture
+
+This project follows a **separation of concerns** between batch processing and real-time serving:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  BATCH PROCESSING (Databricks - Optional)          │
+│  • Index building jobs (FAISS + BM25)              │
+│  • Scheduled/on-demand execution                    │
+│  • Resource-intensive operations                    │
+│  • Writes to shared storage (DBFS/Blob)            │
+└─────────────────────────────────────────────────────┘
+                    ↓ (produces)
+┌─────────────────────────────────────────────────────┐
+│  INDEXES (Shared Storage)                           │
+│  • index/voyage.faiss                               │
+│  • index_bm25/bm25_index.pkl                        │
+│  • Can be local disk, DBFS, or Azure Blob          │
+└─────────────────────────────────────────────────────┘
+                    ↑ (reads)
+┌─────────────────────────────────────────────────────┐
+│  REAL-TIME SERVING (Flask API)                      │
+│  • Loads pre-built indexes at startup              │
+│  • Serves /search endpoint with low latency        │
+│  • Deployment options:                              │
+│    - Local (development)                            │
+│    - Docker container                               │
+│    - Azure VM / Container Instances / AKS          │
+│    - Databricks Model Serving (requires setup)     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Key Points
+
+**🔵 Databricks** (Optional - for production index building):
+- ✅ Runs resource-intensive index building jobs
+- ✅ Scheduled via Terraform-managed workflows
+- ✅ Accesses secrets (API keys) from secret scopes
+- ❌ **Does NOT host the API** - only builds indexes
+
+**🟢 Flask API** (Required - for serving queries):
+- ✅ Loads pre-built indexes (FAISS + BM25)
+- ✅ Serves search queries via REST API
+- ✅ Runs on separate infrastructure (VM, container, etc.)
+- ✅ Can be deployed independently of Databricks
+
+**💡 Why this separation?**
+- **Cost-effective**: Databricks only runs for expensive batch jobs, not 24/7
+- **Performance**: API server optimized for low-latency serving
+- **Flexibility**: Can run locally, in containers, or cloud VMs
+- **Scalability**: Scale API separately from index building
+
+### Deployment Scenarios
+
+| Scenario | Index Building | API Hosting | Use Case |
+|----------|---------------|-------------|----------|
+| **Local Development** | Local machine | Local Flask (`make api`) | Testing & development |
+| **Docker** | Local or Databricks | Docker container | Consistent deployment |
+| **Production** | Databricks Jobs | Azure VM/AKS/Container Instances | Scalable production |
+| **All-in-One** | Local machine | Local Flask | Simple deployments |
+
 ## Features
 
 ### 🔍 **Hybrid Search Pipeline**
@@ -240,9 +301,16 @@ make type
 
 ## Databricks + Terraform
 
-Provision Databricks resources to run indexing jobs in your workspace.
+> **Note:** Databricks is **optional** and used **only for batch index building**, not for hosting the API. See the [Architecture](#architecture) section for the full picture.
 
-Prereqs:
+Provision Databricks resources to run indexing jobs in your workspace. This is useful for:
+- **Scheduled index updates** (e.g., nightly rebuilds)
+- **Large-scale processing** with cloud compute
+- **Team collaboration** with shared infrastructure
+
+**Important:** The Flask API must be deployed separately (see [Architecture](#architecture) for deployment options).
+
+### Prerequisites
 - Terraform >= 1.5
 - Databricks workspace host and PAT token
 
@@ -261,16 +329,26 @@ make tf-apply  # creates Databricks repo and jobs
 make tf-destroy
 ```
 
-What it creates:
-- Databricks Repo cloned from your git remote/branch
-- Two Jobs (standalone) and one Workflow:
-  - Build FAISS index (runs apps/cli/build_index.py)
-  - Build BM25 index (runs scripts/build_bm25_index.py)
-  - Workflow: sequentially runs FAISS → BM25 on the same cluster
+### What Terraform Creates
 
-Secrets:
-- Option A: Pass `-var voyage_api_key=...` in `make tf-plan` / `make tf-apply` to store `VOYAGE_API_KEY` in a Databricks secret scope `rag-voyage-demo`.
-- Option B: Create the secret manually via UI/CLI and set the same key.
+**Databricks Resources (Index Building Only):**
+- **Repo**: Clones your git repository into Databricks workspace
+- **Jobs** (batch index building):
+  - Job 1: Build FAISS index (runs `apps/cli/build_index.py`)
+  - Job 2: Build BM25 index (runs `scripts/build_bm25_index.py`)
+  - Workflow: Sequentially runs FAISS → BM25 on the same cluster
+- **Secret Scope**: Stores `VOYAGE_API_KEY` securely
+
+**What it does NOT create:**
+- ❌ API hosting infrastructure
+- ❌ Real-time serving endpoints
+- ❌ Load balancers or ingress
+
+### Secrets Management
+
+- **Option A**: Pass `-var voyage_api_key=...` in `make tf-plan` / `make tf-apply` to store `VOYAGE_API_KEY` in a Databricks secret scope `rag-voyage-demo`.
+- **Option B**: Create the secret manually via UI/CLI and set the same key.
+
 Jobs read the key from the secret scope when running.
 
 ## Databricks Notebooks
