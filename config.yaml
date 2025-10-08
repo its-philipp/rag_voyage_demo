@@ -17,10 +17,13 @@ retrieval:
   top_m: 200             # candidates to send to reranker
   top_k: 20              # final chunks returned to generator
 reranker:
+  enabled: true          # Must be true to use reranker
   type: colbert          # [colbert, crossencoder]
   colbert_model: colbert-ir/colbertv2.0
+  reranker_k: 10         # Top K results after reranking
   max_query_len: 64
   max_doc_len: 180
+  device: cpu            # or cuda if available
 generator:
   max_context_tokens: 3000
   # (left for your LLM of choice)

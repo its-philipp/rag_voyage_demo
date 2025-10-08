@@ -119,6 +119,38 @@ CI publishes images to GHCR as `ghcr.io/<owner>/rag-voyage-demo:latest` and `:<g
 - `scripts/ingest_folder.py` — Convert a folder of `.md/.txt` to JSONL
 - `eval/run_evaluation.py` — Baseline vs Agentic evaluation with metrics
 
+## Testing & Report Generation
+
+Generate comprehensive RAG reports showing queries, retrieved chunks, generated answers, and all metrics:
+
+```bash
+# Make sure Flask API is running (in one terminal)
+make api
+
+# In another terminal, generate report
+.venv/bin/uv run python examples/generate_rag_report.py
+```
+
+The report generator provides:
+- **Retrieved Chunks**: Top documents with ColBERT reranker scores
+- **Generated Answers**: LLM responses using retrieved context
+- **RAG Triad Metrics**: Groundedness, Context Relevance, Answer Relevance
+- **Comprehensive Analysis**: Score distributions, latency, quality assessment
+- **JSON Output**: Structured report saved to `examples/rag_report.json`
+
+**Example output:**
+```
+📊 COMPREHENSIVE SCORE SUMMARY
+🔍 RETRIEVAL SCORES (ColBERT Reranker):
+  [1]  52.58 - colbert overview
+  [2]  50.25 - ColBERT v2
+  ...
+🎯 RAG TRIAD METRICS (LLM Judge: GPT-4o-mini):
+  Groundedness:       🌟 1.000 - Excellent
+  Context Relevance:  🌟 1.000 - Excellent
+  Answer Relevance:   🌟 1.000 - Excellent
+```
+
 ## Config highlights (`config.yaml`)
 ```yaml
 embedding:
@@ -139,7 +171,7 @@ retrieval:
   top_k: 20
 
 reranker:
-  enabled: true
+  enabled: true          # IMPORTANT: Must be true to get real scores
   type: colbert
   colbert_model: colbert-ir/colbertv2.0
   reranker_k: 10
@@ -148,6 +180,8 @@ reranker:
 index_path: "./index"
 bm25_index_path: "./index_bm25"
 ```
+
+**Important:** Set `reranker.enabled: true` in config.yaml to get real ColBERT scores (not placeholder 1.0 values).
 
 ## Data ingestion
 - Place `.md`/`.txt` in `data/corpus/` then:
@@ -182,6 +216,9 @@ make type
 ├── apps/                    # API & CLI entrypoints
 ├── scripts/                 # Utilities & ingestion
 ├── eval/                    # Evaluation & reports
+├── examples/                # Demo scripts & generated reports
+│   ├── generate_rag_report.py  # Comprehensive RAG report generator
+│   └── rag_report.json         # Sample output report
 ├── data/                    # Sample docs & corpus/
 ├── index/, index_bm25/      # Built indexes
 ├── infra/terraform/         # Databricks Terraform
