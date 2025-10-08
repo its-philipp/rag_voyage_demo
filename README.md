@@ -2,6 +2,36 @@
 
 Hybrid search (dense + sparse) with reranking and agentic RAG. Packaged with CLI, API, Docker, and Databricks/Terraform infra.
 
+## Overview
+
+This is a production-ready RAG (Retrieval-Augmented Generation) system that combines multiple search strategies for optimal document retrieval and answer generation. The system provides:
+
+### 🚀 **Application Interfaces**
+- **REST API** (Flask): Two endpoints for health checks and search queries
+  - `GET /health` - Service health check
+  - `POST /search` - Hybrid search with JSON request/response
+- **CLI Tools**: Command-line utilities for building indices and running queries
+- **Docker Support**: Containerized deployment with CI/CD via GitHub Actions
+- **Databricks Integration**: Terraform-managed infrastructure with automated job scheduling
+
+### 📊 **Evaluation & Metrics**
+
+The system includes a comprehensive evaluation framework that measures RAG quality across three key dimensions:
+
+- **Groundedness** (0-1): Measures whether the generated answer is fully supported by the retrieved source documents (prevents hallucination)
+- **Context Relevance** (0-1): Evaluates how relevant the retrieved documents are to the user's question
+- **Answer Relevance** (0-1): Assesses how well the final answer addresses the user's question
+
+These metrics are computed using GPT-4o-mini as an evaluator and can compare baseline RAG vs. agentic RAG approaches. Reports are automatically generated in `eval/reports/`.
+
+### 🔄 **Scoring Pipeline**
+
+Search results go through a multi-stage scoring process:
+1. **Initial Retrieval**: Dense (FAISS) and Sparse (BM25) retrievers independently fetch candidates
+2. **Reciprocal Rank Fusion**: Combines results from both retrievers using rank-based scoring
+3. **Reranking**: ColBERT or CrossEncoder models compute final relevance scores
+4. **Final Response**: Top-K documents with reranker scores returned to user
+
 ## Features
 
 ### 🔍 **Hybrid Search Pipeline**
